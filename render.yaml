@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: manager-coaching-intervention-portal
+    env: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    disk:
+      name: manager-coaching-data
+      mountPath: /data
+      sizeGB: 1

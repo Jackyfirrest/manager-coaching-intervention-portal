@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manager Coaching Intervention Portal</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Micro-learning quality control</p>
+        <h1>Manager Coaching Intervention Portal</h1>
+      </div>
+      <div class="manager-chip" id="managerChip">Loading manager</div>
+    </header>
+
+    <main class="layout">
+      <section class="panel roster-panel" aria-label="Team health roster">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Team Health</p>
+            <h2>Direct Reports</h2>
+          </div>
+          <select id="sortSelect" aria-label="Sort roster">
+            <option value="risk">Risk first</option>
+            <option value="name">Name</option>
+            <option value="score">Score</option>
+          </select>
+        </div>
+        <div class="legend">
+          <span><i class="dot green"></i>Healthy</span>
+          <span><i class="dot amber"></i>Warning</span>
+          <span><i class="dot red"></i>Locked</span>
+        </div>
+        <div id="roster" class="roster"></div>
+      </section>
+
+      <section class="panel detail-panel" aria-label="Diagnostic view">
+        <div id="emptyState" class="empty-state">
+          <p class="eyebrow">Diagnostic View</p>
+          <h2>Select a locked or warning agent</h2>
+          <p>Managers can review lock reasons, repeated missed questions, AI coaching feedback, and unlock a module only after documenting an offline coaching conversation.</p>
+        </div>
+
+        <div id="diagnostics" class="diagnostics hidden">
+          <div class="diagnostic-header">
+            <div>
+              <p class="eyebrow">Diagnostic View</p>
+              <h2 id="agentName"></h2>
+              <p id="agentMeta"></p>
+            </div>
+            <span id="statePill" class="state-pill"></span>
+          </div>
+
+          <div class="grid-two">
+            <div>
+              <h3>Active Locks</h3>
+              <div id="locks"></div>
+            </div>
+            <div>
+              <h3>AI Feedback</h3>
+              <p id="feedback" class="ai-box"></p>
+            </div>
+          </div>
+
+          <h3>Repeated Failed Questions</h3>
+          <div id="questions" class="question-list"></div>
+
+          <h3>Recent Attempts</h3>
+          <div id="attempts" class="attempt-list"></div>
+
+          <form id="unlockForm" class="unlock-form">
+            <h3>Intervention Log</h3>
+            <label for="notes">Offline coaching notes</label>
+            <textarea id="notes" minlength="20" placeholder="Example: Sat down with Lin; explained the FSC data privacy clause and asked him to restate consent steps." required></textarea>
+            <div class="form-row">
+              <span id="noteCount">0 / 20 minimum</span>
+              <button type="submit">Sign & Unlock Module</button>
+            </div>
+            <p id="formMessage" class="form-message"></p>
+          </form>
+        </div>
+      </section>
+
+      <aside class="panel side-panel" aria-label="Notifications and trigger simulation">
+        <p class="eyebrow">Project 8 Routing</p>
+        <h2>Notifications</h2>
+        <div id="notifications" class="notifications"></div>
+
+        <div class="simulator">
+          <p class="eyebrow">Trigger Engine Demo</p>
+          <h2>Submit Quiz Result</h2>
+          <select id="simAgent" aria-label="Agent"></select>
+          <select id="simModule" aria-label="Module">
+            <option value="MOD-TRAVEL-DATA">Travel Insurance Data Sharing</option>
+            <option value="MOD-ILP-RISK">Investment-Linked Policy Risk Disclosure</option>
+            <option value="MOD-KYC">KYC Refresh and Suitability Review</option>
+          </select>
+          <input id="simScore" type="number" min="0" max="100" value="62" aria-label="Score">
+          <button id="simulateBtn">Evaluate Result</button>
+          <p id="simMessage" class="form-message"></p>
+        </div>
+      </aside>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

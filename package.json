@@ -1,0 +1,23 @@
+{
+  "name": "manager-coaching-intervention-portal",
+  "version": "1.0.0",
+  "description": "Manager-facing coaching intervention portal for micro-learning quality control.",
+  "main": "app.js",
+  "private": true,
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js",
+    "check": "node --check app.js && node --check public/app.js",
+    "health": "node -e \"fetch('http://localhost:' + (process.env.PORT || 3000) + '/health').then(r => r.json()).then(console.log)\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "micro-learning",
+    "coaching",
+    "sqlite",
+    "node"
+  ],
+  "license": "UNLICENSED"
+}

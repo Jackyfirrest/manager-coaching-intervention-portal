@@ -1,0 +1,21 @@
+# Local runtime state
+.env
+*.sqlite
+*.sqlite3
+*.db
+server.*.log
+*.log
+
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Assignment source documents are kept local unless intentionally added.
+*.docx
