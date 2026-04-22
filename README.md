@@ -1,68 +1,50 @@
 # Manager Coaching Intervention Portal
 
-A manager-facing coaching workflow application for monitoring learning risk, reviewing diagnostic evidence, recording intervention notes, and unlocking restricted training modules with an audit trail.
+A manager-facing coaching workflow prototype for monitoring learning risk, reviewing diagnostic evidence, recording intervention notes, and unlocking restricted training modules with an audit trail.
 
-This project was built as a lightweight full-stack prototype using Node.js, SQLite, HTML, CSS, and vanilla JavaScript. It intentionally avoids framework overhead so the core business rules, data model, and deployment path are easy to inspect.
+The project is intentionally lightweight: Node.js, SQLite, HTML, CSS, and vanilla JavaScript. There are no third-party npm packages, so the business rules, data model, and deployment path are easy to inspect.
 
-## Project Overview
+## What This Solves
 
-Organizations often need a reliable way to intervene when employees repeatedly fail required training or show declining quiz performance. This portal models that workflow from the manager's point of view:
+Managers need a reliable way to intervene when required learning modules show repeated failure or declining performance. This portal models that process end to end:
 
-1. Detect learning risk from quiz attempts.
-2. Lock the affected learning module.
-3. Route an alert to the responsible manager.
-4. Show diagnostic context for the coaching conversation.
-5. Require intervention notes before unlocking the module.
-6. Preserve the unlock decision in an audit table.
+1. Quiz attempts create learning risk signals.
+2. Risk rules lock the affected module.
+3. The responsible manager receives an urgent alert.
+4. The manager reviews missed-question patterns and recent scores.
+5. The manager records offline coaching notes.
+6. The app unlocks the module and stores the intervention record.
 
 ## Core Capabilities
 
 - **Team health dashboard**: Direct reports are grouped into `Locked`, `Warning`, and `Healthy` states.
-- **Diagnostic view**: Managers can review module lock state, missed-question patterns, recent scores, and recommended coaching focus.
-- **Manager notification routing**: Active locks create urgent manager-facing alerts.
-- **Controlled unlock flow**: Locked modules cannot be unlocked until the manager records coaching notes.
-- **Quiz result simulator**: Demo quiz submissions can trigger the same lock rules used by the application.
-- **SQLite persistence**: Coaching interventions, lock states, quiz attempts, and notifications are stored relationally.
-- **Docker and Render deployment**: The app can run locally, in Docker, or on Render as a small web service.
+- **Diagnostic workspace**: The center panel shows module lock state, coaching gaps, score history, and unlock actions.
+- **Manager alerts**: Active module locks generate manager-facing notifications.
+- **Controlled unlock flow**: Unlocking requires manager notes and creates an audit record.
+- **Quiz simulator**: Demo quiz results can trigger the same risk rules used by the application.
+- **SQLite data model**: Locks, attempts, failed questions, notifications, and interventions are stored relationally.
+- **CI/CD-ready deployment**: GitHub Actions runs checks; Render deploys after checks pass.
 
-## Business Rules
+## Project Structure
 
-A module is locked when either condition is met:
+```text
+.
+|-- .github/workflows/ci.yml   GitHub Actions workflow for CI checks
+|-- public/
+|   |-- index.html             Main application layout
+|   |-- app.js                 Browser-side rendering and API calls
+|   `-- styles.css             Responsive dashboard styling
+|-- app.js                     HTTP server, API routes, schema, seed data, lock rules
+|-- Dockerfile                 Production container image
+|-- render.yaml                Render Blueprint deployment config
+|-- package.json               npm scripts and Node engine metadata
+|-- .env.example               Optional local environment template
+`-- README.md                  Project documentation
+```
 
-- The same agent fails the same module 3 times.
-- The agent's 7-day average score for a module falls below 70%.
+Generated runtime files such as `.env`, SQLite databases, logs, and `node_modules/` are intentionally ignored by Git.
 
-Team health states are derived from current learning risk:
-
-- `Locked`: the agent has at least one active module lock.
-- `Warning`: the agent has no active lock, but their latest score dropped from the previous score.
-- `Healthy`: the agent has no active lock and no recent score-drop signal.
-
-Unlocking requires manager notes with at least 20 characters. When the manager submits the intervention log, the app records the action in `CoachingInterventions`, marks the lock inactive, and resolves the notification.
-
-## Demo Dataset
-
-The seeded dataset is intentionally small and presentation-friendly:
-
-- 6 direct reports
-- 4 learning modules
-- 2 active locked modules
-- 1 warning case
-- 2 healthy cases
-
-This keeps the interface readable while still demonstrating filtering, diagnostics, alerts, unlocking, and simulated quiz submissions.
-
-## Tech Stack
-
-- **Runtime**: Node.js 20
-- **Server**: Node built-in HTTP module
-- **Database**: SQLite via the `sqlite3` CLI
-- **Frontend**: HTML, CSS, vanilla JavaScript
-- **Deployment**: Docker, Render Blueprint
-
-No third-party npm packages are required.
-
-## Architecture
+## Runtime Flow
 
 ```text
 Browser UI
@@ -76,11 +58,38 @@ Node HTTP server
 SQLite database
 ```
 
-The backend owns schema creation, demo seeding, trigger evaluation, module access checks, notification reconciliation, and unlock validation. The frontend renders the dashboard and calls the API endpoints exposed by the server.
+The backend owns schema creation, seed data, trigger evaluation, module access checks, notification reconciliation, and unlock validation. The frontend renders the dashboard, manages tabs and forms, and calls the API.
+
+## Business Rules
+
+A module is locked when either condition is met:
+
+- The same agent fails the same module 3 times.
+- The agent's 7-day average score for a module falls below 70%.
+
+Team health states:
+
+- `Locked`: the agent has at least one active module lock.
+- `Warning`: the agent has no active lock, but the latest score dropped from the previous score.
+- `Healthy`: the agent has no active lock and no recent score-drop signal.
+
+Unlocking requires manager notes with at least 20 characters. A successful unlock records the action in `CoachingInterventions`, marks the lock inactive, and resolves the related notification.
+
+## Demo Dataset
+
+The seeded dataset is small enough for a clean demo while still exercising the major workflows:
+
+- 6 direct reports
+- 4 learning modules
+- 2 active locked modules
+- 1 warning case
+- 3 healthy cases
+
+The seed data is defined in `app.js` inside `seedDemoData()`. The same seed logic is used locally, in Docker, and on Render.
 
 ## Data Model
 
-Core tables:
+Core workflow tables:
 
 - `TeamStructures`: maps agents to their current manager and branch.
 - `ModuleStateLocks`: stores active and historical module locks.
@@ -100,9 +109,9 @@ Representative endpoints:
 
 - `GET /health`: health check endpoint.
 - `GET /api/roster?manager_id=MGR001`: manager dashboard data.
-- `GET /api/diagnostics?agent_id=A1001`: diagnostic details for one agent.
+- `GET /api/agent/A1001`: diagnostic details for one agent.
 - `GET /api/module-access?agent_id=A1001&module_id=MOD-TRAVEL-DATA`: module access state.
-- `POST /api/interventions`: records coaching notes and unlocks a module.
+- `POST /api/unlock`: records coaching notes and unlocks a module.
 - `POST /api/simulate-quiz`: inserts a quiz attempt and evaluates lock rules.
 
 ## Local Setup
@@ -144,7 +153,7 @@ Expected response:
 
 ## Configuration
 
-Optional environment variables can be placed in `.env`:
+The app works without a local `.env` file. Create `.env` only when overriding defaults:
 
 ```env
 PORT=3000
@@ -160,7 +169,7 @@ RESET_DEMO_DATA=false
 - `SEED_DEMO_DATA`: set to `false` to disable automatic demo seed creation.
 - `RESET_DEMO_DATA`: set to `true` only when intentionally rebuilding the demo dataset.
 
-The database does not reset on every startup. Demo data is inserted only when the database is empty, when the bundled demo dataset version changes, or when `RESET_DEMO_DATA=true`.
+By default, local data is stored in `manager_coaching.sqlite`. The database is not reset on every startup. Demo data is inserted only when the database is empty, when the bundled demo data version changes, or when `RESET_DEMO_DATA=true`.
 
 ## Docker Deployment
 
@@ -170,7 +179,7 @@ Build the image:
 docker build -t manager-coaching-intervention-portal .
 ```
 
-Run with persistent SQLite storage:
+Run with persistent local Docker storage:
 
 ```cmd
 docker volume create manager-coaching-data
@@ -185,14 +194,15 @@ The repository includes `render.yaml` for Render Blueprint deployment.
 
 Deployment flow:
 
-1. Push this repository to GitHub.
-2. In Render, create a new Blueprint.
+1. Push the repository to GitHub.
+2. Create a new Blueprint in Render.
 3. Connect the GitHub repository.
 4. Render builds the Docker image from `Dockerfile`.
-5. The service starts with `npm start`.
-6. Render checks `/health` for service health.
+5. GitHub Actions runs CI checks.
+6. Render deploys after checks pass.
+7. Render checks `/health` for service health.
 
-The included `render.yaml` is configured for Render Free tier:
+Current Blueprint configuration:
 
 ```yaml
 services:
@@ -204,41 +214,26 @@ services:
     healthCheckPath: /health
 ```
 
-On Render Free tier, the SQLite file is created inside the service filesystem:
-
-```text
-/data/manager_coaching.sqlite
-```
-
-Render Free tier does not support persistent disks for this Blueprint configuration. That means the deployed demo can run successfully, but SQLite data may be recreated after redeploys or service restarts. For a production deployment that must preserve coaching records permanently, use one of these options:
-
-- Upgrade the Render service and attach a persistent disk at `/data`.
-- Move persistence to an external database such as Render Postgres.
-
-Because `autoDeployTrigger: checksPass` is enabled in `render.yaml`, Render waits for the connected branch's CI checks to pass before triggering an automatic deploy.
+Render Free tier does not support persistent disks for this Blueprint configuration. The deployed demo can run successfully, but SQLite data may be recreated after redeploys or service restarts. For production persistence, use a paid Render disk or move persistence to an external database such as Render Postgres.
 
 ## CI/CD
 
-This repository includes a GitHub Actions workflow at `.github/workflows/ci.yml`.
+CI is defined in `.github/workflows/ci.yml`.
 
-The CI workflow runs on pushes to `main` and on pull requests. It checks out the repository, sets up Node.js 20, installs the SQLite CLI, and runs:
+On pushes to `main` and on pull requests, GitHub Actions:
 
-```cmd
-npm run check
-```
+1. Checks out the repository.
+2. Sets up Node.js 20.
+3. Installs the SQLite CLI.
+4. Runs `npm run check`.
 
-Render provides continuous deployment through `autoDeployTrigger: checksPass` in `render.yaml`. After the Blueprint is connected to the GitHub repository, pushes to the connected branch trigger CI first. Render deploys only after the GitHub Actions checks pass.
+CD is handled by Render. Because `autoDeployTrigger: checksPass` is set in `render.yaml`, Render deploys only after the GitHub Actions checks pass for the pushed commit.
 
-If CI fails, Render skips the automatic deploy for that commit.
+## Tech Stack
 
-## Repository Structure
-
-```text
-app.js              HTTP server, API routes, SQLite schema, seed data, lock rules
-public/index.html   Main page layout
-public/app.js       Frontend rendering, API calls, tabs, simulator, unlock form
-public/styles.css   Responsive layout and visual design
-Dockerfile          Container image definition
-render.yaml         Render Blueprint deployment configuration
-.env.example        Optional local configuration template
-```
+- **Runtime**: Node.js 20
+- **Server**: Node built-in HTTP module
+- **Database**: SQLite via the `sqlite3` CLI
+- **Frontend**: HTML, CSS, vanilla JavaScript
+- **CI**: GitHub Actions
+- **Deployment**: Docker, Render Blueprint
