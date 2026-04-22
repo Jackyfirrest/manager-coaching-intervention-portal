@@ -1,22 +1,22 @@
 :root {
-  --ink: #312b26;
-  --muted: #6f665e;
-  --line: #ded5cb;
-  --surface: #fffdf9;
-  --surface-soft: #f8f4ed;
-  --surface-tint: #f1eee5;
-  --page: #eee9df;
-  --green: #416d58;
-  --green-soft: #e9f1e8;
-  --amber: #8c6a2e;
-  --amber-soft: #f7eccf;
-  --red: #a65a62;
-  --red-soft: #f5e4e4;
-  --blue: #5d6754;
-  --blue-soft: #e8ece4;
-  --teal: #51766b;
-  --shadow: 0 18px 44px rgba(63, 50, 38, 0.1);
-  --shadow-soft: 0 10px 24px rgba(63, 50, 38, 0.07);
+  --ink: #22302d;
+  --muted: #64716d;
+  --line: #d7dfda;
+  --surface: #ffffff;
+  --surface-soft: #f7f9f7;
+  --surface-tint: #eef4f1;
+  --page: #edf1ee;
+  --green: #34725a;
+  --green-soft: #e8f3ec;
+  --amber: #8c6f2d;
+  --amber-soft: #f7efd3;
+  --red: #aa5662;
+  --red-soft: #f7e6e8;
+  --blue: #486b62;
+  --blue-soft: #e7efec;
+  --teal: #4c766d;
+  --shadow: 0 18px 44px rgba(34, 48, 45, 0.1);
+  --shadow-soft: 0 10px 24px rgba(34, 48, 45, 0.07);
 }
 
 * {
@@ -28,8 +28,8 @@ body {
   min-height: 100vh;
   color: var(--ink);
   background:
-    linear-gradient(180deg, rgba(235, 222, 205, 0.82), rgba(238, 233, 223, 0.98) 330px),
-    repeating-linear-gradient(90deg, rgba(93, 103, 84, 0.035) 0 1px, transparent 1px 96px),
+    linear-gradient(180deg, rgba(220, 229, 224, 0.82), rgba(237, 241, 238, 0.98) 330px),
+    repeating-linear-gradient(90deg, rgba(72, 107, 98, 0.035) 0 1px, transparent 1px 96px),
     var(--page);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -57,11 +57,11 @@ textarea:focus-visible,
   gap: 24px;
   padding: 24px 32px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%),
-    linear-gradient(90deg, #3f4f44, #65705c 58%, #8a7650);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 42%),
+    linear-gradient(90deg, #2f463f, #486b62 58%, #69725a);
   color: #fff;
-  border-bottom: 4px solid #c4a767;
-  box-shadow: 0 8px 24px rgba(63, 50, 38, 0.16);
+  border-bottom: 4px solid #b8a15f;
+  box-shadow: 0 8px 24px rgba(34, 48, 45, 0.16);
 }
 
 .topbar h1,
@@ -78,13 +78,13 @@ textarea:focus-visible,
 .hero-copy {
   max-width: 760px;
   margin: 8px 0 0;
-  color: #f0eee5;
+  color: #dbe7e2;
   line-height: 1.45;
 }
 
 .eyebrow {
   margin: 0 0 6px;
-  color: #777066;
+  color: #7b8a86;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0;
@@ -92,7 +92,7 @@ textarea:focus-visible,
 }
 
 .topbar .eyebrow {
-  color: #ead99d;
+  color: #d7c884;
 }
 
 .manager-chip {
@@ -125,13 +125,13 @@ textarea:focus-visible,
 }
 
 .detail-panel {
-  border-color: rgba(93, 103, 84, 0.24);
-  box-shadow: 0 22px 52px rgba(63, 50, 38, 0.12);
+  border-color: rgba(72, 107, 98, 0.22);
+  box-shadow: 0 22px 52px rgba(34, 48, 45, 0.12);
 }
 
 .roster-panel,
 .side-panel {
-  background: rgba(255, 253, 249, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-soft);
 }
 
@@ -356,8 +356,8 @@ button:active {
 .agent-card:hover,
 .agent-card.active {
   border-color: var(--blue);
-  background: #fbf8f1;
-  box-shadow: 0 0 0 3px rgba(93, 103, 84, 0.14);
+  background: #f8fbf8;
+  box-shadow: 0 0 0 3px rgba(72, 107, 98, 0.13);
 }
 
 .agent-card:hover {
@@ -500,7 +500,7 @@ button:active {
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f1eee5;
+  background: #eef4f1;
 }
 
 .detail-tab {
@@ -521,10 +521,10 @@ button:active {
 }
 
 .detail-tab.active {
-  border-color: rgba(93, 103, 84, 0.3);
+  border-color: rgba(72, 107, 98, 0.28);
   background: #fff;
   color: var(--blue);
-  box-shadow: 0 1px 4px rgba(63, 50, 38, 0.08);
+  box-shadow: 0 1px 4px rgba(34, 48, 45, 0.08);
 }
 
 .detail-tab:disabled {
@@ -746,7 +746,7 @@ button:active {
 .unlock-form {
   margin-top: 18px;
   padding: 18px;
-  border: 1px solid rgba(93, 103, 84, 0.2);
+  border: 1px solid rgba(72, 107, 98, 0.18);
   border-radius: 8px;
   background: var(--blue-soft);
 }
