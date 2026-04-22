@@ -217,15 +217,19 @@ Render Free tier does not support persistent disks for this Blueprint configurat
 
 Because `autoDeploy: true` is enabled in `render.yaml`, Render can redeploy automatically when new commits are pushed to the connected branch.
 
-## CI/CD Consideration
+## CI/CD
 
-This prototype already has basic continuous deployment through Render auto-deploy. For a production team workflow, the recommended next step would be a small CI check that runs before deployment:
+This repository includes a GitHub Actions workflow at `.github/workflows/ci.yml`.
+
+The CI workflow runs on pushes to `main` and on pull requests. It checks out the repository, sets up Node.js 20, installs the SQLite CLI, and runs:
 
 ```cmd
 npm run check
 ```
 
-That can be added with GitHub Actions if the project needs pull request validation. A larger CI pipeline is not necessary for the current prototype because there are no third-party dependencies or automated test suites yet.
+Render provides continuous deployment through `autoDeploy: true` in `render.yaml`. After the Blueprint is connected to the GitHub repository, pushes to the connected branch can trigger a rebuild and redeploy.
+
+For stricter deployment control, Render can be configured to deploy only after CI checks pass.
 
 ## Repository Structure
 
