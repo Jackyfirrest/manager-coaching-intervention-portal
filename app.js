@@ -11,7 +11,7 @@ const DB_PATH = path.resolve(__dirname, process.env.DB_PATH || "manager_coaching
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA !== "false";
 const RESET_DEMO_DATA = process.env.RESET_DEMO_DATA === "true";
-const DEMO_DATA_VERSION = "warm-simple-v2";
+const DEMO_DATA_VERSION = "warm-simple-v3";
 const SQLITE_PRAGMAS = "PRAGMA foreign_keys = ON;";
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -227,14 +227,22 @@ function seedDemoData() {
       ('A1002', 'MOD-ILP-RISK', 76, 1, datetime('now', '-1 days')),
       ('A1003', 'MOD-KYC', 69, 0, datetime('now', '-3 days')),
       ('A1003', 'MOD-KYC', 68, 0, datetime('now', '-1 days')),
+      ('A1003', 'MOD-AML', 82, 1, datetime('now', '-12 hours')),
       ('A1004', 'MOD-AML', 91, 1, datetime('now', '-2 days')),
-      ('A1005', 'MOD-TRAVEL-DATA', 88, 1, datetime('now', '-1 days')),
+      ('A1005', 'MOD-TRAVEL-DATA', 63, 0, datetime('now', '-4 days')),
+      ('A1005', 'MOD-TRAVEL-DATA', 66, 0, datetime('now', '-2 days')),
+      ('A1005', 'MOD-TRAVEL-DATA', 64, 0, datetime('now', '-1 days')),
+      ('A1006', 'MOD-ILP-RISK', 64, 0, datetime('now', '-5 days')),
+      ('A1006', 'MOD-ILP-RISK', 66, 0, datetime('now', '-3 days')),
+      ('A1006', 'MOD-ILP-RISK', 63, 0, datetime('now', '-1 days')),
       ('A1006', 'MOD-AML', 93, 1, datetime('now', '-2 days'));
 
     INSERT INTO FailedQuestions (agent_id, module_id, question_text, wrong_answer, correct_focus, failed_count) VALUES
       ('A1001', 'MOD-TRAVEL-DATA', 'Before sharing client data, what should be checked first?', 'Assumes internal teams can share automatically.', 'Confirm consent, purpose, and recipient before sharing.', 3),
       ('A1003', 'MOD-KYC', 'When should a client profile be refreshed?', 'Waits for the annual review only.', 'Refresh KYC when risk, product, or client information changes.', 2),
-      ('A1002', 'MOD-ILP-RISK', 'What belongs in a balanced risk explanation?', 'Talks mostly about expected return.', 'Explain suitability, downside risk, fees, and non-guaranteed returns.', 1);
+      ('A1002', 'MOD-ILP-RISK', 'What belongs in a balanced risk explanation?', 'Talks mostly about expected return.', 'Explain suitability, downside risk, fees, and non-guaranteed returns.', 1),
+      ('A1005', 'MOD-TRAVEL-DATA', 'What should be documented after approved data sharing?', 'Keeps only the customer ID.', 'Document consent time, purpose, recipient, and staff owner.', 2),
+      ('A1006', 'MOD-ILP-RISK', 'What must be checked before recommending a higher-risk product?', 'Starts with product performance.', 'Confirm suitability, risk tolerance, fees, and downside scenarios.', 2);
 
     INSERT INTO AppSettings (key, value)
     VALUES ('demo_data_version', '${DEMO_DATA_VERSION}');

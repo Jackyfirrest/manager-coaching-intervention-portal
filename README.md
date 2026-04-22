@@ -81,9 +81,9 @@ The seeded dataset is small enough for a clean demo while still exercising the m
 
 - 6 direct reports
 - 4 learning modules
-- 2 active locked modules
+- 4 active locked modules
 - 1 warning case
-- 3 healthy cases
+- 1 healthy case
 
 The seed data is defined in `app.js` inside `seedDemoData()`. The same seed logic is used locally, in Docker, and on Render.
 
