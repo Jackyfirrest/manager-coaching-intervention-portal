@@ -11,7 +11,7 @@ const DB_PATH = path.resolve(__dirname, process.env.DB_PATH || "manager_coaching
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA !== "false";
 const RESET_DEMO_DATA = process.env.RESET_DEMO_DATA === "true";
-const DEMO_DATA_VERSION = "warm-simple-v3";
+const DEMO_DATA_VERSION = "kgifh-simple-v1";
 const ENABLE_DEMO_WRITES = process.env.ENABLE_DEMO_WRITES !== "false";
 const DEMO_WRITE_LIMIT = Number(process.env.DEMO_WRITE_LIMIT || 24);
 const DEMO_WRITE_WINDOW_MS = Number(process.env.DEMO_WRITE_WINDOW_MS || 60 * 60 * 1000);
@@ -200,29 +200,29 @@ function seedDemoData() {
     DELETE FROM AppSettings WHERE key = 'demo_data_version';
 
     INSERT INTO Managers VALUES
-      ('MGR001', 'Grace Chen', 'Taipei Learning Studio');
+      ('MGR001', 'Grace Chen', 'KGIFH Taipei HQ');
 
     INSERT INTO Agents VALUES
-      ('A1001', 'Lin Po-Yu', 'Client Care Associate'),
-      ('A1002', 'Chen Ssu-Ying', 'Wealth Associate'),
-      ('A1003', 'Wu Mei-Ling', 'KYC Specialist'),
-      ('A1004', 'Huang Wan-Ju', 'Service Coach'),
+      ('A1001', 'Lin Po-Yu', 'Group Client RM'),
+      ('A1002', 'Chen Ssu-Ying', 'Wealth Advisory Associate'),
+      ('A1003', 'Wu Mei-Ling', 'Group KYC Specialist'),
+      ('A1004', 'Huang Wan-Ju', 'Compliance Coach'),
       ('A1005', 'Chang Chia-Hao', 'Management Trainee'),
-      ('A1006', 'Tsai Yi-Ting', 'Operations Associate');
+      ('A1006', 'Tsai Yi-Ting', 'Operations Risk Associate');
 
     INSERT INTO Modules VALUES
-      ('MOD-TRAVEL-DATA', 'Customer Data Sharing', 'Careful Compliance'),
-      ('MOD-ILP-RISK', 'Investment Risk Talk', 'Warm Advisory'),
-      ('MOD-KYC', 'KYC Refresh', 'Client Onboarding'),
-      ('MOD-AML', 'AML Escalation', 'Safety Basics');
+      ('MOD-TRAVEL-DATA', 'Group Customer Data Sharing', 'KGIFH Compliance'),
+      ('MOD-ILP-RISK', 'Investment Risk Disclosure', 'Wealth Advisory'),
+      ('MOD-KYC', 'Group KYC Refresh', 'Client Onboarding'),
+      ('MOD-AML', 'AML Escalation', 'Regulatory Essentials');
 
     INSERT INTO TeamStructures (agent_id, manager_id, branch_code, effective_date) VALUES
-      ('A1001', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
-      ('A1002', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
-      ('A1003', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
-      ('A1004', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
-      ('A1005', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
-      ('A1006', 'MGR001', 'Taipei Learning Studio', '2026-01-01');
+      ('A1001', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1002', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1003', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1004', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1005', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1006', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01');
 
     INSERT INTO QuizAttempts (agent_id, module_id, score, passed, attempted_at) VALUES
       ('A1001', 'MOD-TRAVEL-DATA', 62, 0, datetime('now', '-4 days')),

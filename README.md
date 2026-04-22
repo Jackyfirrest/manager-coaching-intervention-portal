@@ -80,6 +80,7 @@ Unlocking requires manager notes with at least 20 characters. A successful unloc
 
 The seeded dataset is small enough for a clean demo while still exercising the major workflows:
 
+- KGIFH Taipei HQ manager context
 - 6 direct reports
 - 4 learning modules
 - 4 active locked modules
