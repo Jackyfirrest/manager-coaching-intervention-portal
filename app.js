@@ -12,7 +12,12 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA !== "false";
 const RESET_DEMO_DATA = process.env.RESET_DEMO_DATA === "true";
 const DEMO_DATA_VERSION = "warm-simple-v3";
+const ENABLE_DEMO_WRITES = process.env.ENABLE_DEMO_WRITES !== "false";
+const DEMO_WRITE_LIMIT = Number(process.env.DEMO_WRITE_LIMIT || 24);
+const DEMO_WRITE_WINDOW_MS = Number(process.env.DEMO_WRITE_WINDOW_MS || 60 * 60 * 1000);
+const MAX_QUIZ_ATTEMPTS = Number(process.env.MAX_QUIZ_ATTEMPTS || 300);
 const SQLITE_PRAGMAS = "PRAGMA foreign_keys = ON;";
+const writeBuckets = new Map();
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
@@ -618,6 +623,15 @@ function simulateQuiz({ agentId, moduleId, score }) {
     return { ok: false, status: 422, error: "Agent, module, and a score from 0 to 100 are required." };
   }
 
+  const attemptCount = runSql("SELECT COUNT(*) AS count FROM QuizAttempts;", true)[0]?.count || 0;
+  if (Number(attemptCount) >= MAX_QUIZ_ATTEMPTS) {
+    return {
+      ok: false,
+      status: 429,
+      error: "The public demo has reached its quiz-attempt limit. Redeploy or reset the demo data to start fresh."
+    };
+  }
+
   const activeLock = getActiveLock(agentId, moduleId);
   if (activeLock) {
     return {
@@ -659,6 +673,44 @@ function simulateQuiz({ agentId, moduleId, score }) {
   }
   evaluateAllLocks();
   return getModuleAccess(agentId, moduleId);
+}
+
+function getClientKey(req, pathname) {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = String(Array.isArray(forwarded) ? forwarded[0] : forwarded || req.socket.remoteAddress || "unknown")
+    .split(",")[0]
+    .trim();
+  return `${ip}:${pathname}`;
+}
+
+function guardDemoWrites(req, pathname) {
+  if (!ENABLE_DEMO_WRITES) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Public demo write actions are disabled. Clone the repo and run locally to try unlocks or quiz simulation."
+    };
+  }
+
+  const now = Date.now();
+  const key = getClientKey(req, pathname);
+  const bucket = writeBuckets.get(key);
+
+  if (!bucket || now > bucket.resetAt) {
+    writeBuckets.set(key, { count: 1, resetAt: now + DEMO_WRITE_WINDOW_MS });
+    return null;
+  }
+
+  if (bucket.count >= DEMO_WRITE_LIMIT) {
+    return {
+      ok: false,
+      status: 429,
+      error: "Too many demo write actions from this browser. Please wait before trying again."
+    };
+  }
+
+  bucket.count += 1;
+  return null;
 }
 
 function send(res, status, payload, type = "application/json") {
@@ -743,11 +795,15 @@ async function handle(req, res) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/unlock") {
+      const blocked = guardDemoWrites(req, url.pathname);
+      if (blocked) return send(res, blocked.status, blocked);
       const result = unlockModule(await parseBody(req));
       return send(res, result.ok ? 200 : result.status, result);
     }
 
     if (req.method === "POST" && url.pathname === "/api/simulate-quiz") {
+      const blocked = guardDemoWrites(req, url.pathname);
+      if (blocked) return send(res, blocked.status, blocked);
       const result = simulateQuiz(await parseBody(req));
       return send(res, result.ok ? 200 : result.status, result);
     }

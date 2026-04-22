@@ -23,6 +23,7 @@ Managers need a reliable way to intervene when required learning modules show re
 - **Controlled unlock flow**: Unlocking requires manager notes and creates an audit record.
 - **Quiz simulator**: Demo quiz results can trigger the same risk rules used by the application.
 - **SQLite data model**: Locks, attempts, failed questions, notifications, and interventions are stored relationally.
+- **Public demo protection**: Write actions remain interactive but are rate-limited and capped to protect the demo database.
 - **CI/CD-ready deployment**: GitHub Actions runs checks; Render deploys after checks pass.
 
 ## Project Structure
@@ -161,6 +162,9 @@ HOST=0.0.0.0
 DB_PATH=manager_coaching.sqlite
 SEED_DEMO_DATA=true
 RESET_DEMO_DATA=false
+ENABLE_DEMO_WRITES=true
+DEMO_WRITE_LIMIT=24
+MAX_QUIZ_ATTEMPTS=300
 ```
 
 - `PORT`: web server port.
@@ -168,8 +172,13 @@ RESET_DEMO_DATA=false
 - `DB_PATH`: SQLite database path.
 - `SEED_DEMO_DATA`: set to `false` to disable automatic demo seed creation.
 - `RESET_DEMO_DATA`: set to `true` only when intentionally rebuilding the demo dataset.
+- `ENABLE_DEMO_WRITES`: set to `false` to make public write actions read-only.
+- `DEMO_WRITE_LIMIT`: maximum write actions per client/path per hour.
+- `MAX_QUIZ_ATTEMPTS`: hard cap for quiz-attempt rows in a public demo.
 
 By default, local data is stored in `manager_coaching.sqlite`. The database is not reset on every startup. Demo data is inserted only when the database is empty, when the bundled demo data version changes, or when `RESET_DEMO_DATA=true`.
+
+Public demo deployments keep unlock and quiz simulation features available for reviewers. To prevent abuse, the server limits repeated write actions and caps quiz-attempt growth. Render Free tier storage is still ephemeral, so public demo data may reset after redeploys or service restarts.
 
 ## Docker Deployment
 
