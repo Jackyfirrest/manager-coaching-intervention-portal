@@ -3,5 +3,5 @@ services:
     name: manager-coaching-intervention-portal
     env: docker
     plan: free
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     healthCheckPath: /health

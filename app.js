@@ -11,7 +11,7 @@ const DB_PATH = path.resolve(__dirname, process.env.DB_PATH || "manager_coaching
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA !== "false";
 const RESET_DEMO_DATA = process.env.RESET_DEMO_DATA === "true";
-const DEMO_DATA_VERSION = "warm-simple-v1";
+const DEMO_DATA_VERSION = "warm-simple-v2";
 const SQLITE_PRAGMAS = "PRAGMA foreign_keys = ON;";
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -202,7 +202,8 @@ function seedDemoData() {
       ('A1002', 'Chen Ssu-Ying', 'Wealth Associate'),
       ('A1003', 'Wu Mei-Ling', 'KYC Specialist'),
       ('A1004', 'Huang Wan-Ju', 'Service Coach'),
-      ('A1005', 'Chang Chia-Hao', 'Management Trainee');
+      ('A1005', 'Chang Chia-Hao', 'Management Trainee'),
+      ('A1006', 'Tsai Yi-Ting', 'Operations Associate');
 
     INSERT INTO Modules VALUES
       ('MOD-TRAVEL-DATA', 'Customer Data Sharing', 'Careful Compliance'),
@@ -215,7 +216,8 @@ function seedDemoData() {
       ('A1002', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
       ('A1003', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
       ('A1004', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
-      ('A1005', 'MGR001', 'Taipei Learning Studio', '2026-01-01');
+      ('A1005', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
+      ('A1006', 'MGR001', 'Taipei Learning Studio', '2026-01-01');
 
     INSERT INTO QuizAttempts (agent_id, module_id, score, passed, attempted_at) VALUES
       ('A1001', 'MOD-TRAVEL-DATA', 62, 0, datetime('now', '-4 days')),
@@ -226,7 +228,8 @@ function seedDemoData() {
       ('A1003', 'MOD-KYC', 69, 0, datetime('now', '-3 days')),
       ('A1003', 'MOD-KYC', 68, 0, datetime('now', '-1 days')),
       ('A1004', 'MOD-AML', 91, 1, datetime('now', '-2 days')),
-      ('A1005', 'MOD-TRAVEL-DATA', 88, 1, datetime('now', '-1 days'));
+      ('A1005', 'MOD-TRAVEL-DATA', 88, 1, datetime('now', '-1 days')),
+      ('A1006', 'MOD-AML', 93, 1, datetime('now', '-2 days'));
 
     INSERT INTO FailedQuestions (agent_id, module_id, question_text, wrong_answer, correct_focus, failed_count) VALUES
       ('A1001', 'MOD-TRAVEL-DATA', 'Before sharing client data, what should be checked first?', 'Assumes internal teams can share automatically.', 'Confirm consent, purpose, and recipient before sharing.', 3),

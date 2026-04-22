@@ -44,7 +44,7 @@ Unlocking requires manager notes with at least 20 characters. When the manager s
 
 The seeded dataset is intentionally small and presentation-friendly:
 
-- 5 direct reports
+- 6 direct reports
 - 4 learning modules
 - 2 active locked modules
 - 1 warning case
@@ -200,7 +200,7 @@ services:
     name: manager-coaching-intervention-portal
     env: docker
     plan: free
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     healthCheckPath: /health
 ```
 
@@ -215,7 +215,7 @@ Render Free tier does not support persistent disks for this Blueprint configurat
 - Upgrade the Render service and attach a persistent disk at `/data`.
 - Move persistence to an external database such as Render Postgres.
 
-Because `autoDeploy: true` is enabled in `render.yaml`, Render can redeploy automatically when new commits are pushed to the connected branch.
+Because `autoDeployTrigger: checksPass` is enabled in `render.yaml`, Render waits for the connected branch's CI checks to pass before triggering an automatic deploy.
 
 ## CI/CD
 
@@ -227,9 +227,9 @@ The CI workflow runs on pushes to `main` and on pull requests. It checks out the
 npm run check
 ```
 
-Render provides continuous deployment through `autoDeploy: true` in `render.yaml`. After the Blueprint is connected to the GitHub repository, pushes to the connected branch can trigger a rebuild and redeploy.
+Render provides continuous deployment through `autoDeployTrigger: checksPass` in `render.yaml`. After the Blueprint is connected to the GitHub repository, pushes to the connected branch trigger CI first. Render deploys only after the GitHub Actions checks pass.
 
-For stricter deployment control, Render can be configured to deploy only after CI checks pass.
+If CI fails, Render skips the automatic deploy for that commit.
 
 ## Repository Structure
 
