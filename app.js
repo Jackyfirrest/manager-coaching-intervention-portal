@@ -511,5 +511,6 @@ async function handle(req, res) {
 
 initDb();
 http.createServer(handle).listen(PORT, HOST, () => {
-  console.log(`Manager Coaching Intervention Portal running at http://${HOST}:${PORT}`);
+  const displayHost = HOST === "0.0.0.0" ? "localhost" : HOST;
+  console.log(`Manager Coaching Intervention Portal running at http://${displayHost}:${PORT}`);
 });
