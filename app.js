@@ -771,7 +771,7 @@ async function handle(req, res) {
         manager: runSql("SELECT * FROM Managers WHERE manager_id = 'MGR001';", true)[0],
         roster: getRoster(url.searchParams.get("manager_id") || "MGR001"),
         notifications: runSql(`
-          SELECT n.*, a.agent_name, m.module_title, l.lock_reason, l.is_locked
+          SELECT n.*, l.agent_id, a.agent_name, m.module_title, l.lock_reason, l.is_locked
           FROM Notifications n
           JOIN ModuleStateLocks l ON l.lock_id = n.lock_id
           JOIN Agents a ON a.agent_id = l.agent_id

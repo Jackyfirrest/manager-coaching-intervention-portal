@@ -36,9 +36,9 @@ const statusLabels = {
 };
 
 const statusDescriptions = {
-  Green: "No issue",
-  Amber: "Score dropped",
-  Red: "Needs coaching"
+  Green: "No active risk",
+  Amber: "Score decline",
+  Red: "Coaching required"
 };
 
 function escapeHtml(value) {
@@ -63,6 +63,18 @@ async function api(path, options = {}) {
 
 function stateClass(state) {
   return state.toLowerCase();
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const parsed = new Date(String(value).replace(" ", "T"));
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function renderTeamSummary() {
@@ -93,18 +105,22 @@ function renderRoster() {
   rosterEl.innerHTML = visibleData.length ? visibleData.map((agent) => `
     <article class="agent-card ${agent.agent_id === selectedAgentId ? "active" : ""}" data-agent-id="${escapeHtml(agent.agent_id)}" role="button" tabindex="0">
       <i class="state-bar ${stateClass(agent.health_state)}"></i>
-      <div>
-        <div class="agent-title-row">
-          <h3>${escapeHtml(agent.agent_name)}</h3>
-          <span class="status-badge ${stateClass(agent.health_state)}">${statusLabels[agent.health_state] || agent.health_state}</span>
+      <div class="agent-card-body">
+        <div class="agent-main-row">
+          <div class="agent-name-block">
+            <h3>${escapeHtml(agent.agent_name)}</h3>
+            <p>${escapeHtml(agent.role_title)}</p>
+          </div>
+          <div class="score">${Number(agent.rolling_average).toFixed(1)}%</div>
         </div>
-        <p>${escapeHtml(agent.role_title)}</p>
-        <div class="risk-detail">
-          <span>${statusDescriptions[agent.health_state] || agent.health_state}</span>
-          ${agent.lock_count ? `<span class="metric">${agent.lock_count} locked module</span>` : scoreTrend(agent)}
+        <div class="agent-status-row">
+          <span class="status-badge ${stateClass(agent.health_state)}">${statusLabels[agent.health_state] || agent.health_state}</span>
+          <div class="risk-detail">
+            <span>${statusDescriptions[agent.health_state] || agent.health_state}</span>
+            ${agent.lock_count ? `<span class="metric">${agent.lock_count} locked ${agent.lock_count === 1 ? "module" : "modules"}</span>` : scoreTrend(agent)}
+          </div>
         </div>
       </div>
-      <div class="score">${Number(agent.rolling_average).toFixed(1)}%</div>
     </article>
   `).join("") : "<p class='form-message'>No reports match this filter.</p>";
 
@@ -118,15 +134,17 @@ function renderRoster() {
 
 function scoreTrend(agent) {
   if (agent.previous_score == null || agent.latest_score == null) return "";
-  const direction = Number(agent.latest_score) < Number(agent.previous_score) ? "down" : "stable";
-  return `<span class="metric">Trend ${agent.previous_score} -> ${agent.latest_score} ${direction}</span>`;
+  const latest = Number(agent.latest_score);
+  const previous = Number(agent.previous_score);
+  const direction = latest < previous ? "down" : latest > previous ? "up" : "stable";
+  return `<span class="metric">Score ${agent.previous_score} -> ${agent.latest_score} ${direction}</span>`;
 }
 
 function renderNotifications(notifications) {
   const visibleNotifications = alertsExpanded ? notifications : notifications.slice(0, 3);
   notificationsEl.innerHTML = visibleNotifications.length ? visibleNotifications.map((item) => `
-    <article class="notification" data-status="${item.status}">
-      <strong><span>${item.status === "urgent" ? "Urgent" : "Resolved"}</span>${escapeHtml(item.agent_name)}</strong>
+    <article class="notification" data-status="${item.status}" data-agent-id="${escapeHtml(item.agent_id)}" role="button" tabindex="0">
+      <strong>${escapeHtml(item.agent_name)}<span>${item.status === "urgent" ? "Urgent" : "Resolved"}</span></strong>
       <p>${escapeHtml(item.module_title)}</p>
       <p>${lockReasonLabel(item.lock_reason || "coaching_required")}</p>
     </article>
@@ -189,9 +207,9 @@ function renderDiagnosticDetails() {
   document.querySelector("#locks").innerHTML = locks.length ? locks.map((lock) => `
     <article class="lock-card">
       <span class="module-label">${escapeHtml(lock.module_title)}</span>
-      <strong>Action required</strong>
+      <strong>Module locked</strong>
       <p>${lockReasonLabel(lock.lock_reason)}</p>
-      <small>Next step: coach offline, record notes, then unlock. Locked at ${escapeHtml(lock.locked_timestamp)}</small>
+      <small>Next step: coach offline, record the intervention note, then unlock. Locked ${escapeHtml(formatDateTime(lock.locked_timestamp))}</small>
     </article>
   `).join("") : `
     <article class="soft-card">
@@ -217,7 +235,7 @@ function renderDiagnosticDetails() {
     <article class="question-card">
       <span class="module-label">${Number(question.failed_count)} misses</span>
       <strong>${escapeHtml(question.question_text)}</strong>
-      <p><b>Issue:</b> ${escapeHtml(question.wrong_answer)}</p>
+      <p><b>Pattern:</b> ${escapeHtml(question.wrong_answer)}</p>
       <p><b>Coach:</b> ${escapeHtml(question.correct_focus)}</p>
     </article>
   `).join("") : `
@@ -229,7 +247,7 @@ function renderDiagnosticDetails() {
 
   document.querySelector("#attempts").innerHTML = attempts.length ? attempts.map((attempt) => `
     <div class="attempt-row">
-      <span>${escapeHtml(attempt.module_title)}<small>${escapeHtml(attempt.attempted_at)}</small></span>
+      <span>${escapeHtml(attempt.module_title)}<small>${escapeHtml(formatDateTime(attempt.attempted_at))}</small></span>
       <strong>${attempt.score}%</strong>
       <span class="attempt-state ${attempt.passed ? "pass" : "fail"}">${attempt.passed ? "Passed" : "Failed"}</span>
     </div>
@@ -266,7 +284,7 @@ function renderDiagnostics(data) {
   document.querySelector("#agentMeta").textContent = `${data.agent.role_title} - ${data.agent.branch_code}`;
   const hasLocks = data.locks.length > 0;
   const statePill = document.querySelector("#statePill");
-  statePill.textContent = hasLocks ? "Action required" : "Active";
+  statePill.textContent = hasLocks ? "Needs coaching" : "Active";
   statePill.style.color = hasLocks ? "var(--red)" : "var(--green)";
 
   notes.value = "";
@@ -300,6 +318,19 @@ rosterEl.addEventListener("keydown", (event) => {
   selectAgent(card.dataset.agentId);
 });
 
+notificationsEl.addEventListener("click", (event) => {
+  const card = event.target.closest(".notification");
+  if (card) selectAgent(card.dataset.agentId);
+});
+
+notificationsEl.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest(".notification");
+  if (!card) return;
+  event.preventDefault();
+  selectAgent(card.dataset.agentId);
+});
+
 sortSelect.addEventListener("change", renderRoster);
 statusFilter.addEventListener("change", () => {
   rosterExpanded = false;
@@ -308,10 +339,12 @@ statusFilter.addEventListener("change", () => {
 rosterToggle.addEventListener("click", () => {
   rosterExpanded = !rosterExpanded;
   renderRoster();
+  rosterEl.scrollTop = 0;
 });
-alertsToggle.addEventListener("click", () => {
+alertsToggle.addEventListener("click", async () => {
   alertsExpanded = !alertsExpanded;
-  loadRoster();
+  await loadRoster();
+  notificationsEl.scrollTop = 0;
 });
 moduleFilter.addEventListener("change", () => {
   selectedModuleId = moduleFilter.value;
@@ -327,7 +360,7 @@ notes.addEventListener("input", updateNoteCount);
 
 unlockForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  formMessage.textContent = "Submitting signed intervention...";
+  formMessage.textContent = "Saving intervention note...";
   try {
     await api("/api/unlock", {
       method: "POST",
@@ -337,7 +370,7 @@ unlockForm.addEventListener("submit", async (event) => {
         notes: notes.value
       })
     });
-    formMessage.textContent = "Module unlocked and audit trail recorded.";
+    formMessage.textContent = "Module unlocked. Audit trail recorded.";
     await loadRoster();
     await selectAgent(selectedAgentId);
   } catch (error) {
@@ -346,7 +379,7 @@ unlockForm.addEventListener("submit", async (event) => {
 });
 
 document.querySelector("#simulateBtn").addEventListener("click", async () => {
-  simMessage.textContent = "Evaluating result...";
+  simMessage.textContent = "Evaluating quiz result...";
   try {
     await api("/api/simulate-quiz", {
       method: "POST",
@@ -356,7 +389,7 @@ document.querySelector("#simulateBtn").addEventListener("click", async () => {
         score: simScore.value
       })
     });
-    simMessage.textContent = "Test result submitted. Roster refreshed.";
+    simMessage.textContent = "Quiz result saved. Dashboard refreshed.";
     await loadRoster();
     await selectAgent(simAgent.value);
   } catch (error) {

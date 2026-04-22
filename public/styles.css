@@ -45,7 +45,9 @@ button:focus-visible,
 select:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
-.agent-card:focus-visible {
+.scroll-region:focus-visible,
+.agent-card:focus-visible,
+.notification:focus-visible {
   outline: 3px solid rgba(36, 87, 183, 0.28);
   outline-offset: 2px;
 }
@@ -54,8 +56,8 @@ textarea:focus-visible,
   display: grid;
   grid-template-columns: minmax(360px, 1fr) auto;
   align-items: center;
-  gap: 24px;
-  padding: 24px 32px;
+  gap: 22px;
+  padding: 22px 32px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 42%),
     linear-gradient(90deg, #2f463f, #486b62 58%, #69725a);
@@ -71,13 +73,13 @@ textarea:focus-visible,
 }
 
 .topbar h1 {
-  font-size: 28px;
+  font-size: 27px;
   line-height: 1.15;
 }
 
 .hero-copy {
   max-width: 760px;
-  margin: 8px 0 0;
+  margin: 7px 0 0;
   color: #dbe7e2;
   line-height: 1.45;
 }
@@ -108,12 +110,12 @@ textarea:focus-visible,
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(260px, 310px) minmax(600px, 1.65fr) minmax(260px, 310px);
-  gap: 18px;
+  grid-template-columns: minmax(260px, 300px) minmax(620px, 1.8fr) minmax(260px, 300px);
+  gap: 16px;
   align-items: start;
   max-width: 1640px;
   margin: 0 auto;
-  padding: 22px 24px;
+  padding: 20px 24px;
 }
 
 .panel {
@@ -121,7 +123,7 @@ textarea:focus-visible,
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  padding: 20px;
+  padding: 18px;
 }
 
 .detail-panel {
@@ -286,14 +288,14 @@ button:active {
 .team-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 16px;
+  gap: 7px;
+  margin-top: 14px;
 }
 
 .summary-tile {
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 10px;
+  padding: 9px;
   background: linear-gradient(180deg, #fff, var(--surface-soft));
 }
 
@@ -307,7 +309,7 @@ button:active {
 .summary-tile strong {
   display: block;
   margin-top: 4px;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
 }
 
@@ -336,21 +338,42 @@ button:active {
 
 .roster {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  max-height: 500px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .agent-card {
   display: grid;
   grid-template-columns: 9px minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  min-height: 94px;
-  padding: 13px;
+  min-height: 88px;
+  padding: 11px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
   transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.agent-card-body {
+  min-width: 0;
+}
+
+.agent-main-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.agent-name-block {
+  min-width: 0;
 }
 
 .agent-card:hover,
@@ -364,16 +387,21 @@ button:active {
   transform: translateY(-1px);
 }
 
-.agent-title-row {
+.agent-status-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
 }
 
 .agent-card h3 {
-  font-size: 16px;
+  max-width: 100%;
+  font-size: 15px;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .agent-card p,
@@ -384,19 +412,27 @@ button:active {
   color: var(--muted);
 }
 
+.agent-name-block p {
+  max-width: 100%;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .risk-detail {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 5px;
+  margin-top: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .risk-detail span {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 22px;
 }
 
 .risk-detail .metric {
@@ -410,16 +446,16 @@ button:active {
 
 .score {
   font-weight: 800;
-  grid-column: 2;
-  min-width: 0;
-  text-align: left;
-  font-size: 18px;
+  flex: 0 0 auto;
+  min-width: 54px;
+  text-align: right;
+  font-size: 17px;
 }
 
 .state-bar {
   grid-row: 1 / span 2;
-  width: 10px;
-  height: 68px;
+  width: 9px;
+  height: 58px;
   border-radius: 6px;
 }
 
@@ -480,8 +516,8 @@ button:active {
   grid-template-columns: auto minmax(220px, 360px);
   align-items: center;
   gap: 12px;
-  margin-top: 18px;
-  padding: 12px;
+  margin-top: 16px;
+  padding: 11px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-tint);
@@ -496,7 +532,7 @@ button:active {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 14px;
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -510,7 +546,8 @@ button:active {
   padding: 8px 6px;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 800;
   white-space: normal;
   min-width: 0;
 }
@@ -555,8 +592,8 @@ button:active {
 .grid-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 18px;
+  gap: 14px;
+  margin-top: 16px;
 }
 
 .grid-two > * {
@@ -566,8 +603,8 @@ button:active {
 .diagnostics h3,
 .side-panel h2,
 .simulator h2 {
-  margin-top: 18px;
-  margin-bottom: 10px;
+  margin-top: 16px;
+  margin-bottom: 9px;
   font-size: 16px;
 }
 
@@ -576,7 +613,7 @@ button:active {
   align-items: end;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 16px;
   margin-bottom: 10px;
 }
 
@@ -614,8 +651,20 @@ button:active {
 .lock-card,
 .question-card,
 .notification {
-  padding: 13px;
-  margin-bottom: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.notification {
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.notification:hover {
+  border-color: rgba(72, 107, 98, 0.36);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(72, 107, 98, 0.1);
+  transform: translateY(-1px);
 }
 
 .lock-card {
@@ -624,7 +673,7 @@ button:active {
 }
 
 .soft-card {
-  padding: 13px;
+  padding: 12px;
   border-left: 4px solid var(--green);
   background: var(--green-soft);
 }
@@ -682,7 +731,7 @@ button:active {
 .question-card strong,
 .notification strong {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .module-label {
@@ -716,7 +765,7 @@ button:active {
   grid-template-columns: minmax(0, 1fr) 64px 86px;
   gap: 10px;
   align-items: center;
-  padding: 10px;
+  padding: 9px 10px;
 }
 
 .attempt-row span:first-child {
@@ -744,8 +793,8 @@ button:active {
 }
 
 .unlock-form {
-  margin-top: 18px;
-  padding: 18px;
+  margin-top: 16px;
+  padding: 16px;
   border: 1px solid rgba(72, 107, 98, 0.18);
   border-radius: 8px;
   background: var(--blue-soft);
@@ -770,7 +819,34 @@ button:active {
 
 .notifications {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  max-height: 315px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.scroll-region {
+  scrollbar-color: rgba(72, 107, 98, 0.36) transparent;
+  scrollbar-width: thin;
+}
+
+.scroll-region::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-region::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-region::-webkit-scrollbar-thumb {
+  background: rgba(72, 107, 98, 0.3);
+  border-radius: 999px;
+}
+
+.scroll-region::-webkit-scrollbar-thumb:hover {
+  background: rgba(72, 107, 98, 0.46);
 }
 
 .side-section + .side-section {
@@ -936,6 +1012,13 @@ button:active {
   .score {
     grid-column: 2;
     text-align: left;
+  }
+
+  .roster,
+  .notifications {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
   button {

@@ -11,7 +11,7 @@
       <div class="brand-block">
         <p class="eyebrow">KGIFH learning risk desk</p>
         <h1>Manager Coaching Intervention Portal</h1>
-        <p class="hero-copy">Spot learning risk, review the coaching context, and record the intervention before unlocking progress.</p>
+        <p class="hero-copy">Review training risk, inspect coaching evidence, and record manager intervention before a module is unlocked.</p>
       </div>
       <div class="manager-chip" id="managerChip">Loading manager</div>
     </header>
@@ -21,7 +21,7 @@
         <div class="panel-heading">
           <div>
             <p class="eyebrow">Team Health</p>
-            <h2>Direct Reports</h2>
+            <h2>Risk Queue</h2>
           </div>
           <div class="toolbar-controls">
             <select id="statusFilter" aria-label="Filter roster by status">
@@ -39,14 +39,14 @@
         </div>
         <div id="teamSummary" class="team-summary" aria-label="Team health summary"></div>
         <details class="compact-rules">
-          <summary>Status rules</summary>
+          <summary>Health rules</summary>
           <div class="legend">
-            <span><i class="dot green"></i>Green: no lock, no drop</span>
-            <span><i class="dot amber"></i>Amber: score dropped</span>
-            <span><i class="dot red"></i>Red: active lock</span>
+            <span><i class="dot green"></i>Healthy: no active risk</span>
+            <span><i class="dot amber"></i>Warning: score decline</span>
+            <span><i class="dot red"></i>Locked: coaching needed</span>
           </div>
         </details>
-        <div id="roster" class="roster"></div>
+        <div id="roster" class="roster scroll-region" tabindex="0" aria-label="Scrollable direct reports"></div>
         <button id="rosterToggle" class="ghost-button hidden" type="button">Show all reports</button>
       </section>
 
@@ -73,8 +73,8 @@
           </div>
 
           <div class="detail-tabs" role="tablist" aria-label="Diagnostic sections">
-            <button type="button" class="detail-tab active" data-tab="summary">Summary</button>
-            <button type="button" class="detail-tab" data-tab="gaps">Coaching Gaps <span id="gapCount">0</span></button>
+            <button type="button" class="detail-tab active" data-tab="summary">Overview</button>
+            <button type="button" class="detail-tab" data-tab="gaps">Coaching <span id="gapCount">0</span></button>
             <button type="button" class="detail-tab" data-tab="attempts">Scores <span id="attemptCount">0</span></button>
             <button type="button" class="detail-tab" data-tab="unlock">Unlock</button>
           </div>
@@ -82,11 +82,11 @@
           <section class="tab-panel active" data-panel="summary">
             <div class="grid-two">
               <div>
-                <h3>Module Lock State</h3>
+                <h3>Lock Status</h3>
                 <div id="locks"></div>
               </div>
               <div>
-                <h3>Coaching Summary</h3>
+                <h3>Focus Areas</h3>
                 <div id="feedback" class="ai-box"></div>
               </div>
             </div>
@@ -95,8 +95,8 @@
           <section class="tab-panel" data-panel="gaps">
             <div class="section-heading">
               <div>
-                <h3>Module Coaching Gaps</h3>
-                <p>What the manager should address in the offline session.</p>
+                <h3>Coaching Evidence</h3>
+                <p>Repeated misses the manager should address offline.</p>
               </div>
             </div>
             <div id="questions" class="question-list"></div>
@@ -115,12 +115,12 @@
           <section class="tab-panel" data-panel="unlock">
             <form id="unlockForm" class="unlock-form">
               <h3>Intervention Log</h3>
-              <p class="section-note">Required before unlocking. Saved as an audit record.</p>
+              <p class="section-note">Required before unlocking and saved to the audit trail.</p>
               <label for="notes">Offline coaching notes</label>
               <textarea id="notes" minlength="20" placeholder="Example: Coached Lin on consent, approved purpose, and the audit note needed before customer data sharing." required></textarea>
               <div class="form-row">
                 <span id="noteCount">0 / 20 minimum</span>
-                <button type="submit">Sign & Unlock Agent's Module</button>
+                <button type="submit">Sign & Unlock Module</button>
               </div>
               <p id="formMessage" class="form-message"></p>
             </form>
@@ -131,8 +131,8 @@
       <aside class="panel side-panel" aria-label="Manager notifications and demo tools">
         <section class="side-section" aria-label="Notifications">
           <p class="eyebrow">Manager Alerts</p>
-          <h2>Routed Notifications</h2>
-          <div id="notifications" class="notifications"></div>
+          <h2>Intervention Alerts</h2>
+          <div id="notifications" class="notifications scroll-region" tabindex="0" aria-label="Scrollable manager alerts"></div>
           <button id="alertsToggle" class="ghost-button hidden" type="button">Show all alerts</button>
         </section>
 
@@ -140,13 +140,13 @@
           <summary>
             <span>
               <small>Manager Workflow</small>
-              <strong>Recommended Actions</strong>
+              <strong>Review Path</strong>
             </span>
           </summary>
           <ol>
-            <li>Review urgent alerts and open the locked module diagnosis.</li>
-            <li>Coach the agent offline using the focus areas in Diagnostic View.</li>
-            <li>Sign the intervention note to unlock the learning module.</li>
+            <li>Open urgent alerts and review the locked module.</li>
+            <li>Coach offline using the focus areas and evidence.</li>
+            <li>Sign the intervention note to unlock the module.</li>
           </ol>
         </details>
 
@@ -154,7 +154,7 @@
           <summary>
             <span>
               <small>Training Events</small>
-              <strong>Quiz Result Simulator</strong>
+              <strong>Quiz Simulator</strong>
             </span>
           </summary>
           <select id="simAgent" aria-label="Agent"></select>
@@ -165,7 +165,7 @@
             <option value="MOD-AML">AML Escalation</option>
           </select>
           <input id="simScore" type="number" min="0" max="100" value="62" aria-label="Score">
-          <button id="simulateBtn">Submit Test Result</button>
+          <button id="simulateBtn">Simulate Quiz Result</button>
           <p id="simMessage" class="form-message"></p>
         </details>
       </aside>
