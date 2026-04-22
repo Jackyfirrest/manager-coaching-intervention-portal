@@ -9,9 +9,9 @@
   <body>
     <header class="topbar">
       <div class="brand-block">
-        <p class="eyebrow">KGIFH Taipei talent risk control</p>
+        <p class="eyebrow">Learning risk desk</p>
         <h1>Manager Coaching Intervention Portal</h1>
-        <p class="hero-copy">High-risk learning modules stop here until manager coaching is recorded.</p>
+        <p class="hero-copy">Spot learning risk, review the coaching context, and record the intervention before unlocking progress.</p>
       </div>
       <div class="manager-chip" id="managerChip">Loading manager</div>
     </header>
@@ -75,7 +75,7 @@
           <div class="detail-tabs" role="tablist" aria-label="Diagnostic sections">
             <button type="button" class="detail-tab active" data-tab="summary">Summary</button>
             <button type="button" class="detail-tab" data-tab="gaps">Coaching Gaps <span id="gapCount">0</span></button>
-            <button type="button" class="detail-tab" data-tab="attempts">Recent Scores <span id="attemptCount">0</span></button>
+            <button type="button" class="detail-tab" data-tab="attempts">Scores <span id="attemptCount">0</span></button>
             <button type="button" class="detail-tab" data-tab="unlock">Unlock</button>
           </div>
 
@@ -117,7 +117,7 @@
               <h3>Intervention Log</h3>
               <p class="section-note">Required before unlocking. Saved as an audit record.</p>
               <label for="notes">Offline coaching notes</label>
-              <textarea id="notes" minlength="20" placeholder="Example: Coached Lin on KGIFH cross-entity consent, approved purpose, and required audit record before data sharing." required></textarea>
+              <textarea id="notes" minlength="20" placeholder="Example: Coached Lin on consent, approved purpose, and the audit note needed before customer data sharing." required></textarea>
               <div class="form-row">
                 <span id="noteCount">0 / 20 minimum</span>
                 <button type="submit">Sign & Unlock Agent's Module</button>
@@ -159,9 +159,9 @@
           </summary>
           <select id="simAgent" aria-label="Agent"></select>
           <select id="simModule" aria-label="Module">
-            <option value="MOD-TRAVEL-DATA">Cross-Entity Customer Data</option>
-            <option value="MOD-ILP-RISK">Investment Risk Disclosure</option>
-            <option value="MOD-KYC">Group KYC Review</option>
+            <option value="MOD-TRAVEL-DATA">Customer Data Sharing</option>
+            <option value="MOD-ILP-RISK">Investment Risk Talk</option>
+            <option value="MOD-KYC">KYC Refresh</option>
             <option value="MOD-AML">AML Escalation</option>
           </select>
           <input id="simScore" type="number" min="0" max="100" value="62" aria-label="Score">

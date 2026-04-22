@@ -10,6 +10,8 @@ const HOST = process.env.HOST || "0.0.0.0";
 const DB_PATH = path.resolve(__dirname, process.env.DB_PATH || "manager_coaching.sqlite");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SEED_DEMO_DATA = process.env.SEED_DEMO_DATA !== "false";
+const RESET_DEMO_DATA = process.env.RESET_DEMO_DATA === "true";
+const DEMO_DATA_VERSION = "warm-simple-v1";
 const SQLITE_PRAGMAS = "PRAGMA foreign_keys = ON;";
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -129,6 +131,11 @@ function initDb() {
       FOREIGN KEY (manager_id) REFERENCES Managers(manager_id)
     );
 
+    CREATE TABLE IF NOT EXISTS AppSettings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_team_structures_agent_effective
       ON TeamStructures (agent_id, effective_date DESC, mapping_id DESC);
 
@@ -151,9 +158,27 @@ function initDb() {
 
   if (!SEED_DEMO_DATA) return;
 
+  if (!shouldSeedDemoData()) {
+    evaluateAllLocks();
+    reconcileNotifications();
+    return;
+  }
+
   seedDemoData();
   evaluateAllLocks();
   reconcileNotifications();
+}
+
+function shouldSeedDemoData() {
+  if (RESET_DEMO_DATA) return true;
+
+  const state = runSql(`
+    SELECT
+      (SELECT COUNT(*) FROM Managers) AS manager_count,
+      (SELECT value FROM AppSettings WHERE key = 'demo_data_version') AS demo_data_version;
+  `, true)[0];
+
+  return Number(state.manager_count) === 0 || state.demo_data_version !== DEMO_DATA_VERSION;
 }
 
 function seedDemoData() {
@@ -167,60 +192,49 @@ function seedDemoData() {
     DELETE FROM Agents;
     DELETE FROM Modules;
     DELETE FROM Managers;
+    DELETE FROM AppSettings WHERE key = 'demo_data_version';
 
     INSERT INTO Managers VALUES
-      ('MGR001', 'Grace Chen', 'KGIFH Taipei HQ');
+      ('MGR001', 'Grace Chen', 'Taipei Learning Studio');
 
     INSERT INTO Agents VALUES
-      ('A1001', 'Lin Po-Yu', 'Group Client RM'),
-      ('A1002', 'Chen Ssu-Ying', 'Securities Associate'),
-      ('A1003', 'Wu Mei-Ling', 'Insurance Specialist'),
-      ('A1004', 'Huang Wan-Ju', 'Compliance Associate'),
-      ('A1005', 'Chang Chia-Hao', 'Management Trainee'),
-      ('A1006', 'Tsai Yi-Ting', 'Wealth Associate'),
-      ('A1007', 'Liao Cheng-En', 'Operations Analyst'),
-      ('A1008', 'Kao Min-Jie', 'Management Trainee');
+      ('A1001', 'Lin Po-Yu', 'Client Care Associate'),
+      ('A1002', 'Chen Ssu-Ying', 'Wealth Associate'),
+      ('A1003', 'Wu Mei-Ling', 'KYC Specialist'),
+      ('A1004', 'Huang Wan-Ju', 'Service Coach'),
+      ('A1005', 'Chang Chia-Hao', 'Management Trainee');
 
     INSERT INTO Modules VALUES
-      ('MOD-TRAVEL-DATA', 'Cross-Entity Customer Data', 'KGIFH Compliance'),
-      ('MOD-ILP-RISK', 'Investment Risk Disclosure', 'Wealth Advisory'),
-      ('MOD-KYC', 'Group KYC Review', 'Client Onboarding'),
-      ('MOD-AML', 'AML Escalation', 'Regulatory Essentials');
+      ('MOD-TRAVEL-DATA', 'Customer Data Sharing', 'Careful Compliance'),
+      ('MOD-ILP-RISK', 'Investment Risk Talk', 'Warm Advisory'),
+      ('MOD-KYC', 'KYC Refresh', 'Client Onboarding'),
+      ('MOD-AML', 'AML Escalation', 'Safety Basics');
 
     INSERT INTO TeamStructures (agent_id, manager_id, branch_code, effective_date) VALUES
-      ('A1001', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
-      ('A1002', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
-      ('A1003', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
-      ('A1004', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
-      ('A1005', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
-      ('A1006', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
-      ('A1007', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
-      ('A1008', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01');
+      ('A1001', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
+      ('A1002', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
+      ('A1003', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
+      ('A1004', 'MGR001', 'Taipei Learning Studio', '2026-01-01'),
+      ('A1005', 'MGR001', 'Taipei Learning Studio', '2026-01-01');
 
     INSERT INTO QuizAttempts (agent_id, module_id, score, passed, attempted_at) VALUES
       ('A1001', 'MOD-TRAVEL-DATA', 62, 0, datetime('now', '-4 days')),
       ('A1001', 'MOD-TRAVEL-DATA', 58, 0, datetime('now', '-2 days')),
       ('A1001', 'MOD-TRAVEL-DATA', 61, 0, datetime('now', '-1 days')),
-      ('A1001', 'MOD-AML', 86, 1, datetime('now', '-6 hours')),
-      ('A1002', 'MOD-ILP-RISK', 84, 1, datetime('now', '-5 days')),
+      ('A1002', 'MOD-ILP-RISK', 86, 1, datetime('now', '-5 days')),
       ('A1002', 'MOD-ILP-RISK', 76, 1, datetime('now', '-1 days')),
       ('A1003', 'MOD-KYC', 69, 0, datetime('now', '-3 days')),
       ('A1003', 'MOD-KYC', 68, 0, datetime('now', '-1 days')),
-      ('A1004', 'MOD-AML', 88, 1, datetime('now', '-2 days')),
-      ('A1005', 'MOD-TRAVEL-DATA', 92, 1, datetime('now', '-1 days')),
-      ('A1006', 'MOD-ILP-RISK', 64, 0, datetime('now', '-5 days')),
-      ('A1006', 'MOD-ILP-RISK', 66, 0, datetime('now', '-3 days')),
-      ('A1006', 'MOD-ILP-RISK', 63, 0, datetime('now', '-1 days')),
-      ('A1007', 'MOD-AML', 67, 0, datetime('now', '-4 days')),
-      ('A1007', 'MOD-AML', 66, 0, datetime('now', '-1 days')),
-      ('A1008', 'MOD-KYC', 89, 1, datetime('now', '-2 days'));
+      ('A1004', 'MOD-AML', 91, 1, datetime('now', '-2 days')),
+      ('A1005', 'MOD-TRAVEL-DATA', 88, 1, datetime('now', '-1 days'));
 
     INSERT INTO FailedQuestions (agent_id, module_id, question_text, wrong_answer, correct_focus, failed_count) VALUES
-      ('A1001', 'MOD-TRAVEL-DATA', 'Before sharing client data with another KGI subsidiary, what must be confirmed?', 'Assumes group companies may share data automatically.', 'Confirm client consent and approved purpose before cross-entity use.', 3),
-      ('A1001', 'MOD-TRAVEL-DATA', 'Which record proves cross-entity data sharing was allowed?', 'Keeps only the customer ID or case number.', 'Keep consent time, purpose, recipient company, and staff ID.', 2),
-      ('A1003', 'MOD-KYC', 'When should a KYC profile be refreshed for a group client?', 'Waits until the next annual review even after risk changes.', 'Refresh KYC when risk profile, product type, or client information changes.', 2),
-      ('A1006', 'MOD-ILP-RISK', 'What must be explained before recommending a high-risk fund?', 'Focuses only on expected return.', 'Explain suitability, downside risk, fees, and non-guaranteed returns.', 3),
-      ('A1007', 'MOD-AML', 'When should an unusual transaction be escalated?', 'Waits for repeated transactions before reporting.', 'Escalate promptly when the transaction pattern is inconsistent with the client profile.', 2);
+      ('A1001', 'MOD-TRAVEL-DATA', 'Before sharing client data, what should be checked first?', 'Assumes internal teams can share automatically.', 'Confirm consent, purpose, and recipient before sharing.', 3),
+      ('A1003', 'MOD-KYC', 'When should a client profile be refreshed?', 'Waits for the annual review only.', 'Refresh KYC when risk, product, or client information changes.', 2),
+      ('A1002', 'MOD-ILP-RISK', 'What belongs in a balanced risk explanation?', 'Talks mostly about expected return.', 'Explain suitability, downside risk, fees, and non-guaranteed returns.', 1);
+
+    INSERT INTO AppSettings (key, value)
+    VALUES ('demo_data_version', '${DEMO_DATA_VERSION}');
   `);
 }
 

@@ -1,195 +1,121 @@
 # Manager Coaching Intervention Portal
 
-A web application for a manager-facing coaching workflow. The portal identifies micro-learning risk signals, routes notifications to the direct manager, and records coaching interventions before a locked training module can be unlocked.
+A manager-facing coaching workflow application for monitoring learning risk, reviewing diagnostic evidence, recording intervention notes, and unlocking restricted training modules with an audit trail.
 
-The application follows a simple workflow: detect learning risk, show diagnostic context, record the coaching action, and keep an audit trail for unlock decisions.
+This project was built as a lightweight full-stack prototype using Node.js, SQLite, HTML, CSS, and vanilla JavaScript. It intentionally avoids framework overhead so the core business rules, data model, and deployment path are easy to inspect.
 
-The demo data is set for KGI Financial Holding's Taipei headquarters context (`KGIFH Taipei HQ`), with cross-entity customer data, investment risk disclosure, group KYC review, and AML escalation modules.
+## Project Overview
 
-## Features
+Organizations often need a reliable way to intervene when employees repeatedly fail required training or show declining quiz performance. This portal models that workflow from the manager's point of view:
 
-- A manager dashboard for monitoring team learning health.
-- Risk detection based on repeated quiz failures and low rolling average scores.
-- A diagnostic view showing locked modules, missed questions, coaching focus, and recent attempts.
-- A required intervention log before unlocking a module.
-- SQLite-backed relational data with audit-friendly intervention records.
-- A lightweight Node.js web server.
-- Docker and Render deployment configuration.
+1. Detect learning risk from quiz attempts.
+2. Lock the affected learning module.
+3. Route an alert to the responsible manager.
+4. Show diagnostic context for the coaching conversation.
+5. Require intervention notes before unlocking the module.
+6. Preserve the unlock decision in an audit table.
 
-## Tech Stack
+## Core Capabilities
 
-- **Backend**: Node.js 20, built-in HTTP server
-- **Frontend**: HTML, CSS, vanilla JavaScript
-- **Database**: SQLite
-- **Deployment**: Docker, Render Blueprint
-
-No npm packages are required.
-
-## Project Structure
-
-```text
-app.js              # HTTP server, API routes, SQLite schema, seed data, business rules
-public/index.html   # Main application layout
-public/app.js       # Frontend rendering, API calls, form handling
-public/styles.css   # Responsive UI styling
-Dockerfile          # Container image definition
-render.yaml         # Render deployment blueprint
-.env.example        # Local environment variable template
-```
-
-## Core Workflow
-
-1. The manager opens the dashboard and reviews direct reports.
-2. Each team member is shown as Green, Amber, or Red based on learning health.
-3. A Red state means a module lock requires manager intervention.
-4. The manager reviews the diagnostic details and coaching feedback.
-5. The manager records offline coaching notes.
-6. The module is unlocked and the intervention is saved in the audit table.
-
-## Requirement Coverage
-
-### User Interface
-
-- `Team Health` roster: shows the manager's direct reports, supports risk/name/score sorting, and color-codes Green, Amber, and Red states.
-- `Diagnostic View`: opens from a roster selection and shows active lock state, locked module, lock reason, repeated failed questions, recent attempts, and generated coaching feedback.
-- `Intervention Log`: requires coaching notes with a minimum character count before the manager can sign and unlock the agent's module.
-
-### Backend Behavior
-
-- Trigger Engine: evaluates quiz submissions immediately through `POST /api/simulate-quiz`.
-- Lock State: locked modules are represented as `Locked_Pending_Coaching` and stored in `ModuleStateLocks` with `is_locked = 1`.
-- Access Control: `GET /api/module-access` reports whether an agent can continue a module. `POST /api/simulate-quiz` rejects attempts for locked modules so the agent cannot continue that learning path.
-- Notification Routing: new locks are routed to the latest direct manager from `TeamStructures` and recorded as urgent `Notifications`.
-- Unlock Protocol: only the current direct manager can unlock a module, and only after entering sufficient coaching notes. Unlocking records a `CoachingInterventions` audit row, marks the lock inactive, resolves the notification, and returns the module to `Active`.
+- **Team health dashboard**: Direct reports are grouped into `Locked`, `Warning`, and `Healthy` states.
+- **Diagnostic view**: Managers can review module lock state, missed-question patterns, recent scores, and recommended coaching focus.
+- **Manager notification routing**: Active locks create urgent manager-facing alerts.
+- **Controlled unlock flow**: Locked modules cannot be unlocked until the manager records coaching notes.
+- **Quiz result simulator**: Demo quiz submissions can trigger the same lock rules used by the application.
+- **SQLite persistence**: Coaching interventions, lock states, quiz attempts, and notifications are stored relationally.
+- **Docker and Render deployment**: The app can run locally, in Docker, or on Render as a small web service.
 
 ## Business Rules
 
-A module can be locked when either of these conditions is met:
+A module is locked when either condition is met:
 
-- The agent fails the same module 3 times.
-- The agent's 7-day rolling average score for a module falls below 70%.
+- The same agent fails the same module 3 times.
+- The agent's 7-day average score for a module falls below 70%.
 
-Team Health colors are based on the current risk state:
+Team health states are derived from current learning risk:
 
-- `Red`: the agent has at least one active module lock.
-- `Amber`: the agent has no active lock, but the latest quiz score is lower than the previous score.
-- `Green`: the agent has no active lock and no latest-score drop.
+- `Locked`: the agent has at least one active module lock.
+- `Warning`: the agent has no active lock, but their latest score dropped from the previous score.
+- `Healthy`: the agent has no active lock and no recent score-drop signal.
 
-Unlocking requires direct-manager notes with at least 20 characters, and the action is stored in `CoachingInterventions`. After an unlock, the trigger engine evaluates only new quiz attempts for that agent and module, so old failures do not immediately recreate the same lock.
+Unlocking requires manager notes with at least 20 characters. When the manager submits the intervention log, the app records the action in `CoachingInterventions`, marks the lock inactive, and resolves the notification.
 
 ## Demo Dataset
 
-The seeded demo is intentionally small, but includes enough rows to show filters, "show all" controls, lock routing, and unlock behavior.
+The seeded dataset is intentionally small and presentation-friendly:
 
-- `Lin Po-Yu`: Red, locked on `Cross-Entity Customer Data` because he failed the same module 3 times.
-- `Wu Mei-Ling`: Red, locked on `Group KYC Review` because her 7-day module average is below 70%.
-- `Chen Ssu-Ying`: Amber, not locked, but her latest investment-risk score dropped from the previous attempt.
-- `Huang Wan-Ju`: Green, no active lock and no score-drop signal.
-- `Chang Chia-Hao`: Green, no active lock and no score-drop signal.
-- `Tsai Yi-Ting`: Red, locked on `Investment Risk Disclosure` because she failed the same module 3 times.
-- `Liao Cheng-En`: Red, locked on `AML Escalation` because his 7-day module average is below 70%.
-- `Kao Min-Jie`: Green, no active lock and no score-drop signal.
+- 5 direct reports
+- 4 learning modules
+- 2 active locked modules
+- 1 warning case
+- 2 healthy cases
 
-With 8 direct reports and 4 urgent alerts, the UI can demonstrate status filtering, "show all reports", and "show all alerts" without needing a large dataset.
+This keeps the interface readable while still demonstrating filtering, diagnostics, alerts, unlocking, and simulated quiz submissions.
 
-This uses a financial-holding-company perspective rather than a single-bank perspective: the training topics cover group customer-data use, wealth/investment risk disclosure, KYC refresh, and AML escalation.
+## Tech Stack
 
-## Database Design
+- **Runtime**: Node.js 20
+- **Server**: Node built-in HTTP module
+- **Database**: SQLite via the `sqlite3` CLI
+- **Frontend**: HTML, CSS, vanilla JavaScript
+- **Deployment**: Docker, Render Blueprint
 
-### Spec-Required Core Tables
+No third-party npm packages are required.
 
-These are the three tables required by the project brief.
-
-- `TeamStructures`: org-chart mapping with `mapping_id`, `agent_id`, `manager_id`, `branch_code`, and `effective_date`.
-- `ModuleStateLocks`: module-level access control with `lock_id`, `agent_id`, `module_id`, `lock_reason`, `locked_timestamp`, and `is_locked`.
-- `CoachingInterventions`: audit trail with `intervention_id`, `lock_id`, `manager_id`, `manager_notes_text`, and `unlocked_timestamp`.
-
-### Supporting Application Tables
-
-These tables support the working demo UI and trigger engine, but they are not replacements for the three required core tables.
-
-- `Managers`, `Agents`, and `Modules`: lookup data used by the roster and diagnostic screens.
-- `QuizAttempts`: stores quiz scores so the trigger engine can detect `failed_3x` and `rolling_avg_below_70`.
-- `FailedQuestions`: stores the diagnostic question text and coaching focus shown in `Top Coaching Gaps`.
-- `Notifications`: stores routed manager alerts for Project 8 integration.
-
-### Database Integrity Rules
-
-- `TeamStructures` keeps historical branch/manager mappings; application queries use the latest `effective_date` for direct-manager routing.
-- `ModuleStateLocks` allows only one active lock per `agent_id` and `module_id`, preventing duplicate unresolved locks for the same learning path.
-- `ModuleStateLocks.is_locked` is constrained to boolean values for newly created databases.
-- `CoachingInterventions.lock_id` is unique, so each lock can be unlocked by one recorded coaching intervention.
-- `CoachingInterventions.manager_notes_text` is validated by the backend and constrained to meaningful notes for newly created databases.
-- Foreign keys link locks to agents/modules and interventions to locks/managers, preserving the audit chain.
-
-## Run Locally
-
-### Requirements
-
-- Node.js 20 or newer
-- SQLite CLI (`sqlite3`) available in PATH
-
-### Start the App
-
-```powershell
-npm start
-```
-
-Open the app in a browser:
+## Architecture
 
 ```text
-http://localhost:3000
+Browser UI
+  |
+  | fetch()
+  v
+Node HTTP server
+  |
+  | sqlite3 CLI
+  v
+SQLite database
 ```
 
-The app creates and seeds `manager_coaching.sqlite` automatically on first run.
+The backend owns schema creation, demo seeding, trigger evaluation, module access checks, notification reconciliation, and unlock validation. The frontend renders the dashboard and calls the API endpoints exposed by the server.
 
-### Optional Environment File
+## Data Model
 
-Copy the example file if local overrides are needed:
+Core tables:
 
-```powershell
-Copy-Item .env.example .env
-```
+- `TeamStructures`: maps agents to their current manager and branch.
+- `ModuleStateLocks`: stores active and historical module locks.
+- `CoachingInterventions`: stores manager notes and unlock timestamps.
 
-Supported variables:
+Supporting tables:
 
-- `PORT`: web server port, default `3000`
-- `HOST`: bind address, default `0.0.0.0`
-- `DB_PATH`: SQLite database path, default `manager_coaching.sqlite`
-- `SEED_DEMO_DATA`: set to `false` to disable demo data creation
+- `Managers`, `Agents`, `Modules`: lookup records for the demo workflow.
+- `QuizAttempts`: stores quiz scores used by the trigger engine.
+- `FailedQuestions`: stores missed-question patterns and coaching focus.
+- `Notifications`: stores manager-facing routed alerts.
+- `AppSettings`: stores the seeded demo data version.
 
-## Checks
+## API Summary
 
-Run the syntax check:
+Representative endpoints:
 
-```powershell
-npm run check
-```
+- `GET /health`: health check endpoint.
+- `GET /api/roster?manager_id=MGR001`: manager dashboard data.
+- `GET /api/diagnostics?agent_id=A1001`: diagnostic details for one agent.
+- `GET /api/module-access?agent_id=A1001&module_id=MOD-TRAVEL-DATA`: module access state.
+- `POST /api/interventions`: records coaching notes and unlocks a module.
+- `POST /api/simulate-quiz`: inserts a quiz attempt and evaluates lock rules.
 
-With the server running, check the health endpoint:
+## Local Setup
 
-```powershell
-npm run health
-```
+Requirements:
 
-Expected health response:
+- Node.js 20 or newer
+- SQLite CLI, `sqlite3`, available in PATH
 
-```json
-{ "status": "ok" }
-```
+Run the app:
 
-## Run with Docker
-
-Build the image:
-
-```powershell
-docker build -t manager-coaching-intervention-portal .
-```
-
-Run the container:
-
-```powershell
-docker run --rm -p 3000:3000 -v manager-coaching-data:/data manager-coaching-intervention-portal
+```cmd
+npm start
 ```
 
 Open:
@@ -198,21 +124,117 @@ Open:
 http://localhost:3000
 ```
 
-## Deploy to Render
+Run syntax checks:
 
-This repository includes `render.yaml` for Render Blueprint deployment.
+```cmd
+npm run check
+```
+
+Check server health while the app is running:
+
+```cmd
+npm run health
+```
+
+Expected response:
+
+```json
+{ "status": "ok" }
+```
+
+## Configuration
+
+Optional environment variables can be placed in `.env`:
+
+```env
+PORT=3000
+HOST=0.0.0.0
+DB_PATH=manager_coaching.sqlite
+SEED_DEMO_DATA=true
+RESET_DEMO_DATA=false
+```
+
+- `PORT`: web server port.
+- `HOST`: server bind address.
+- `DB_PATH`: SQLite database path.
+- `SEED_DEMO_DATA`: set to `false` to disable automatic demo seed creation.
+- `RESET_DEMO_DATA`: set to `true` only when intentionally rebuilding the demo dataset.
+
+The database does not reset on every startup. Demo data is inserted only when the database is empty, when the bundled demo dataset version changes, or when `RESET_DEMO_DATA=true`.
+
+## Docker Deployment
+
+Build the image:
+
+```cmd
+docker build -t manager-coaching-intervention-portal .
+```
+
+Run with persistent SQLite storage:
+
+```cmd
+docker volume create manager-coaching-data
+docker run --rm -p 3000:3000 -v manager-coaching-data:/data manager-coaching-intervention-portal
+```
+
+The Docker image uses `/data/manager_coaching.sqlite` as the database path.
+
+## Render Deployment
+
+The repository includes `render.yaml` for Render Blueprint deployment.
+
+Deployment flow:
 
 1. Push this repository to GitHub.
 2. In Render, create a new Blueprint.
 3. Connect the GitHub repository.
-4. Render will build the Docker image, mount persistent storage at `/data`, and use `/health` for health checks.
+4. Render builds the Docker image from `Dockerfile`.
+5. The service starts with `npm start`.
+6. Render checks `/health` for service health.
 
-The SQLite database path in Docker is configured as:
+The included `render.yaml` is configured for Render Free tier:
+
+```yaml
+services:
+  - type: web
+    name: manager-coaching-intervention-portal
+    env: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+```
+
+On Render Free tier, the SQLite file is created inside the service filesystem:
 
 ```text
 /data/manager_coaching.sqlite
 ```
 
-## Notes
+Render Free tier does not support persistent disks for this Blueprint configuration. That means the deployed demo can run successfully, but SQLite data may be recreated after redeploys or service restarts. For a production deployment that must preserve coaching records permanently, use one of these options:
 
-The project keeps the application flow, database schema, business rules, and deployment configuration small enough to inspect quickly. It uses plain Node.js and SQLite to avoid unnecessary framework or infrastructure overhead.
+- Upgrade the Render service and attach a persistent disk at `/data`.
+- Move persistence to an external database such as Render Postgres.
+
+Because `autoDeploy: true` is enabled in `render.yaml`, Render can redeploy automatically when new commits are pushed to the connected branch.
+
+## CI/CD Consideration
+
+This prototype already has basic continuous deployment through Render auto-deploy. For a production team workflow, the recommended next step would be a small CI check that runs before deployment:
+
+```cmd
+npm run check
+```
+
+That can be added with GitHub Actions if the project needs pull request validation. A larger CI pipeline is not necessary for the current prototype because there are no third-party dependencies or automated test suites yet.
+
+## Repository Structure
+
+```text
+app.js              HTTP server, API routes, SQLite schema, seed data, lock rules
+public/index.html   Main page layout
+public/app.js       Frontend rendering, API calls, tabs, simulator, unlock form
+public/styles.css   Responsive layout and visual design
+Dockerfile          Container image definition
+render.yaml         Render Blueprint deployment configuration
+.env.example        Optional local configuration template
+```
