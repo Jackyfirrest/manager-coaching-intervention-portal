@@ -8,9 +8,10 @@
   </head>
   <body>
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Micro-learning quality control</p>
+      <div class="brand-block">
+        <p class="eyebrow">KGIFH Taipei talent risk control</p>
         <h1>Manager Coaching Intervention Portal</h1>
+        <p class="hero-copy">High-risk learning modules stop here until manager coaching is recorded.</p>
       </div>
       <div class="manager-chip" id="managerChip">Loading manager</div>
     </header>
@@ -22,25 +23,38 @@
             <p class="eyebrow">Team Health</p>
             <h2>Direct Reports</h2>
           </div>
-          <select id="sortSelect" aria-label="Sort roster">
-            <option value="risk">Risk first</option>
-            <option value="name">Name</option>
-            <option value="score">Score</option>
-          </select>
+          <div class="toolbar-controls">
+            <select id="statusFilter" aria-label="Filter roster by status">
+              <option value="All">All status</option>
+              <option value="Red">Locked</option>
+              <option value="Amber">Warning</option>
+              <option value="Green">Healthy</option>
+            </select>
+            <select id="sortSelect" aria-label="Sort roster">
+              <option value="risk">Risk first</option>
+              <option value="name">Name</option>
+              <option value="score">Score</option>
+            </select>
+          </div>
         </div>
-        <div class="legend">
-          <span><i class="dot green"></i>Healthy</span>
-          <span><i class="dot amber"></i>Warning</span>
-          <span><i class="dot red"></i>Locked</span>
-        </div>
+        <div id="teamSummary" class="team-summary" aria-label="Team health summary"></div>
+        <details class="compact-rules">
+          <summary>Status rules</summary>
+          <div class="legend">
+            <span><i class="dot green"></i>Green: no lock, no drop</span>
+            <span><i class="dot amber"></i>Amber: score dropped</span>
+            <span><i class="dot red"></i>Red: active lock</span>
+          </div>
+        </details>
         <div id="roster" class="roster"></div>
+        <button id="rosterToggle" class="ghost-button hidden" type="button">Show all reports</button>
       </section>
 
       <section class="panel detail-panel" aria-label="Diagnostic view">
         <div id="emptyState" class="empty-state">
           <p class="eyebrow">Diagnostic View</p>
-          <h2>Select a locked or warning agent</h2>
-          <p>Managers can review lock reasons, repeated missed questions, AI coaching feedback, and unlock a module only after documenting an offline coaching conversation.</p>
+          <h2>Select an agent</h2>
+          <p>Choose a team member to review one module at a time.</p>
         </div>
 
         <div id="diagnostics" class="diagnostics hidden">
@@ -53,54 +67,107 @@
             <span id="statePill" class="state-pill"></span>
           </div>
 
-          <div class="grid-two">
-            <div>
-              <h3>Active Locks</h3>
-              <div id="locks"></div>
-            </div>
-            <div>
-              <h3>AI Feedback</h3>
-              <p id="feedback" class="ai-box"></p>
-            </div>
+          <div class="module-picker-row">
+            <label for="moduleFilter">Module</label>
+            <select id="moduleFilter" aria-label="Select diagnostic module"></select>
           </div>
 
-          <h3>Repeated Failed Questions</h3>
-          <div id="questions" class="question-list"></div>
+          <div class="detail-tabs" role="tablist" aria-label="Diagnostic sections">
+            <button type="button" class="detail-tab active" data-tab="summary">Summary</button>
+            <button type="button" class="detail-tab" data-tab="gaps">Coaching Gaps <span id="gapCount">0</span></button>
+            <button type="button" class="detail-tab" data-tab="attempts">Recent Scores <span id="attemptCount">0</span></button>
+            <button type="button" class="detail-tab" data-tab="unlock">Unlock</button>
+          </div>
 
-          <h3>Recent Attempts</h3>
-          <div id="attempts" class="attempt-list"></div>
-
-          <form id="unlockForm" class="unlock-form">
-            <h3>Intervention Log</h3>
-            <label for="notes">Offline coaching notes</label>
-            <textarea id="notes" minlength="20" placeholder="Example: Sat down with Lin; explained the FSC data privacy clause and asked him to restate consent steps." required></textarea>
-            <div class="form-row">
-              <span id="noteCount">0 / 20 minimum</span>
-              <button type="submit">Sign & Unlock Module</button>
+          <section class="tab-panel active" data-panel="summary">
+            <div class="grid-two">
+              <div>
+                <h3>Module Lock State</h3>
+                <div id="locks"></div>
+              </div>
+              <div>
+                <h3>Coaching Summary</h3>
+                <div id="feedback" class="ai-box"></div>
+              </div>
             </div>
-            <p id="formMessage" class="form-message"></p>
-          </form>
+          </section>
+
+          <section class="tab-panel" data-panel="gaps">
+            <div class="section-heading">
+              <div>
+                <h3>Module Coaching Gaps</h3>
+                <p>What the manager should address in the offline session.</p>
+              </div>
+            </div>
+            <div id="questions" class="question-list"></div>
+          </section>
+
+          <section class="tab-panel" data-panel="attempts">
+            <div class="section-heading">
+              <div>
+                <h3>Recent Scores</h3>
+                <p>Latest scores for this module, newest first.</p>
+              </div>
+            </div>
+            <div id="attempts" class="attempt-list"></div>
+          </section>
+
+          <section class="tab-panel" data-panel="unlock">
+            <form id="unlockForm" class="unlock-form">
+              <h3>Intervention Log</h3>
+              <p class="section-note">Required before unlocking. Saved as an audit record.</p>
+              <label for="notes">Offline coaching notes</label>
+              <textarea id="notes" minlength="20" placeholder="Example: Coached Lin on KGIFH cross-entity consent, approved purpose, and required audit record before data sharing." required></textarea>
+              <div class="form-row">
+                <span id="noteCount">0 / 20 minimum</span>
+                <button type="submit">Sign & Unlock Agent's Module</button>
+              </div>
+              <p id="formMessage" class="form-message"></p>
+            </form>
+          </section>
         </div>
       </section>
 
-      <aside class="panel side-panel" aria-label="Notifications and trigger simulation">
-        <p class="eyebrow">Project 8 Routing</p>
-        <h2>Notifications</h2>
-        <div id="notifications" class="notifications"></div>
+      <aside class="panel side-panel" aria-label="Manager notifications and demo tools">
+        <section class="side-section" aria-label="Notifications">
+          <p class="eyebrow">Manager Alerts</p>
+          <h2>Routed Notifications</h2>
+          <div id="notifications" class="notifications"></div>
+          <button id="alertsToggle" class="ghost-button hidden" type="button">Show all alerts</button>
+        </section>
 
-        <div class="simulator">
-          <p class="eyebrow">Trigger Engine Demo</p>
-          <h2>Submit Quiz Result</h2>
+        <details class="side-section demo-flow" aria-label="Manager workflow">
+          <summary>
+            <span>
+              <small>Manager Workflow</small>
+              <strong>Recommended Actions</strong>
+            </span>
+          </summary>
+          <ol>
+            <li>Review urgent alerts and open the locked module diagnosis.</li>
+            <li>Coach the agent offline using the focus areas in Diagnostic View.</li>
+            <li>Sign the intervention note to unlock the learning module.</li>
+          </ol>
+        </details>
+
+        <details class="simulator" aria-label="Training event simulator">
+          <summary>
+            <span>
+              <small>Training Events</small>
+              <strong>Quiz Result Simulator</strong>
+            </span>
+          </summary>
           <select id="simAgent" aria-label="Agent"></select>
           <select id="simModule" aria-label="Module">
-            <option value="MOD-TRAVEL-DATA">Travel Insurance Data Sharing</option>
-            <option value="MOD-ILP-RISK">Investment-Linked Policy Risk Disclosure</option>
-            <option value="MOD-KYC">KYC Refresh and Suitability Review</option>
+            <option value="MOD-TRAVEL-DATA">Cross-Entity Customer Data</option>
+            <option value="MOD-ILP-RISK">Investment Risk Disclosure</option>
+            <option value="MOD-KYC">Group KYC Review</option>
+            <option value="MOD-AML">AML Escalation</option>
           </select>
           <input id="simScore" type="number" min="0" max="100" value="62" aria-label="Score">
-          <button id="simulateBtn">Evaluate Result</button>
+          <button id="simulateBtn">Submit Test Result</button>
           <p id="simMessage" class="form-message"></p>
-        </div>
+        </details>
       </aside>
     </main>
 

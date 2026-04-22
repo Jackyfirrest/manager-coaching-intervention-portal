@@ -101,9 +101,9 @@ function initDb() {
       lock_id INTEGER PRIMARY KEY AUTOINCREMENT,
       agent_id TEXT NOT NULL,
       module_id TEXT NOT NULL,
-      lock_reason TEXT NOT NULL,
+      lock_reason TEXT NOT NULL CHECK (lock_reason IN ('failed_3x', 'rolling_avg_below_70')),
       locked_timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      is_locked INTEGER NOT NULL DEFAULT 1,
+      is_locked INTEGER NOT NULL DEFAULT 1 CHECK (is_locked IN (0, 1)),
       FOREIGN KEY (agent_id) REFERENCES Agents(agent_id),
       FOREIGN KEY (module_id) REFERENCES Modules(module_id)
     );
@@ -112,7 +112,7 @@ function initDb() {
       intervention_id INTEGER PRIMARY KEY AUTOINCREMENT,
       lock_id INTEGER NOT NULL,
       manager_id TEXT NOT NULL,
-      manager_notes_text TEXT NOT NULL,
+      manager_notes_text TEXT NOT NULL CHECK (length(trim(manager_notes_text)) >= 20),
       unlocked_timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (lock_id) REFERENCES ModuleStateLocks(lock_id),
       FOREIGN KEY (manager_id) REFERENCES Managers(manager_id)
@@ -128,74 +128,121 @@ function initDb() {
       FOREIGN KEY (lock_id) REFERENCES ModuleStateLocks(lock_id),
       FOREIGN KEY (manager_id) REFERENCES Managers(manager_id)
     );
+
+    CREATE INDEX IF NOT EXISTS idx_team_structures_agent_effective
+      ON TeamStructures (agent_id, effective_date DESC, mapping_id DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_team_structures_manager
+      ON TeamStructures (manager_id, branch_code);
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_module_state_locks_one_active
+      ON ModuleStateLocks (agent_id, module_id)
+      WHERE is_locked = 1;
+
+    CREATE INDEX IF NOT EXISTS idx_module_state_locks_agent
+      ON ModuleStateLocks (agent_id, is_locked, locked_timestamp DESC);
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_coaching_interventions_one_per_lock
+      ON CoachingInterventions (lock_id);
+
+    CREATE INDEX IF NOT EXISTS idx_coaching_interventions_manager_time
+      ON CoachingInterventions (manager_id, unlocked_timestamp DESC);
   `);
 
-  const [{ count }] = runSql("SELECT COUNT(*) AS count FROM Agents;", true);
   if (!SEED_DEMO_DATA) return;
 
-  if (count > 0) {
-    normalizeDemoData();
-    evaluateAllLocks();
-    reconcileNotifications();
-    return;
-  }
-
-  runSql(`
-    INSERT INTO Managers VALUES
-      ('MGR001', 'Eva Wang', 'TPE-Nangang');
-
-    INSERT INTO Agents VALUES
-      ('A1001', 'Lin Po-Yu', 'Senior Insurance Agent'),
-      ('A1002', 'Chen Ssu-Ying', 'Financial Consultant'),
-      ('A1003', 'Chang Chia-Hao', 'Junior Agent'),
-      ('A1004', 'Huang Wan-Ju', 'Wealth Specialist');
-
-    INSERT INTO Modules VALUES
-      ('MOD-TRAVEL-DATA', 'Travel Insurance Data Sharing', 'Cross-Sell Compliance'),
-      ('MOD-ILP-RISK', 'Investment-Linked Policy Risk Disclosure', 'Regulatory Essentials'),
-      ('MOD-KYC', 'KYC Refresh and Suitability Review', 'Client Onboarding');
-
-    INSERT INTO TeamStructures (agent_id, manager_id, branch_code, effective_date) VALUES
-      ('A1001', 'MGR001', 'TPE-Nangang', '2026-01-01'),
-      ('A1002', 'MGR001', 'TPE-Nangang', '2026-01-01'),
-      ('A1003', 'MGR001', 'TPE-Nangang', '2026-01-01'),
-      ('A1004', 'MGR001', 'TPE-Nangang', '2026-01-01');
-
-    INSERT INTO QuizAttempts (agent_id, module_id, score, passed, attempted_at) VALUES
-      ('A1001', 'MOD-TRAVEL-DATA', 55, 0, datetime('now', '-4 days')),
-      ('A1001', 'MOD-TRAVEL-DATA', 61, 0, datetime('now', '-2 days')),
-      ('A1001', 'MOD-TRAVEL-DATA', 58, 0, datetime('now', '-1 days')),
-      ('A1002', 'MOD-ILP-RISK', 68, 0, datetime('now', '-5 days')),
-      ('A1002', 'MOD-ILP-RISK', 74, 1, datetime('now', '-3 days')),
-      ('A1002', 'MOD-ILP-RISK', 65, 0, datetime('now', '-1 days')),
-      ('A1003', 'MOD-KYC', 91, 1, datetime('now', '-2 days')),
-      ('A1004', 'MOD-TRAVEL-DATA', 82, 1, datetime('now', '-1 days'));
-
-    INSERT INTO FailedQuestions (agent_id, module_id, question_text, wrong_answer, correct_focus, failed_count) VALUES
-      ('A1001', 'MOD-TRAVEL-DATA', 'When may an agent share travel-insurance application data with another financial affiliate?', 'Any time the products are bundled.', 'Explicit client consent and purpose limitation under data privacy rules.', 3),
-      ('A1001', 'MOD-TRAVEL-DATA', 'Which record must be retained after a cross-sell data transfer?', 'Only the quote number.', 'Consent timestamp, recipient entity, purpose, and agent identifier.', 2),
-      ('A1002', 'MOD-ILP-RISK', 'Which risk statement must be confirmed before ILP recommendation?', 'Projected returns are guaranteed.', 'Market risk, fee impact, and non-guaranteed returns must be disclosed.', 2);
-  `);
-
+  seedDemoData();
   evaluateAllLocks();
   reconcileNotifications();
 }
 
-function normalizeDemoData() {
+function seedDemoData() {
   runSql(`
-    UPDATE Managers SET manager_name = 'Eva Wang' WHERE manager_id = 'MGR001';
-    UPDATE Agents SET agent_name = 'Lin Po-Yu' WHERE agent_id = 'A1001';
-    UPDATE Agents SET agent_name = 'Chen Ssu-Ying' WHERE agent_id = 'A1002';
-    UPDATE Agents SET agent_name = 'Chang Chia-Hao' WHERE agent_id = 'A1003';
-    UPDATE Agents SET agent_name = 'Huang Wan-Ju' WHERE agent_id = 'A1004';
+    DELETE FROM CoachingInterventions;
+    DELETE FROM Notifications;
+    DELETE FROM ModuleStateLocks;
+    DELETE FROM FailedQuestions;
+    DELETE FROM QuizAttempts;
+    DELETE FROM TeamStructures;
+    DELETE FROM Agents;
+    DELETE FROM Modules;
+    DELETE FROM Managers;
+
+    INSERT INTO Managers VALUES
+      ('MGR001', 'Grace Chen', 'KGIFH Taipei HQ');
+
+    INSERT INTO Agents VALUES
+      ('A1001', 'Lin Po-Yu', 'Group Client RM'),
+      ('A1002', 'Chen Ssu-Ying', 'Securities Associate'),
+      ('A1003', 'Wu Mei-Ling', 'Insurance Specialist'),
+      ('A1004', 'Huang Wan-Ju', 'Compliance Associate'),
+      ('A1005', 'Chang Chia-Hao', 'Management Trainee'),
+      ('A1006', 'Tsai Yi-Ting', 'Wealth Associate'),
+      ('A1007', 'Liao Cheng-En', 'Operations Analyst'),
+      ('A1008', 'Kao Min-Jie', 'Management Trainee');
+
+    INSERT INTO Modules VALUES
+      ('MOD-TRAVEL-DATA', 'Cross-Entity Customer Data', 'KGIFH Compliance'),
+      ('MOD-ILP-RISK', 'Investment Risk Disclosure', 'Wealth Advisory'),
+      ('MOD-KYC', 'Group KYC Review', 'Client Onboarding'),
+      ('MOD-AML', 'AML Escalation', 'Regulatory Essentials');
+
+    INSERT INTO TeamStructures (agent_id, manager_id, branch_code, effective_date) VALUES
+      ('A1001', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1002', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1003', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1004', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1005', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1006', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1007', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01'),
+      ('A1008', 'MGR001', 'KGIFH Taipei HQ', '2026-01-01');
+
+    INSERT INTO QuizAttempts (agent_id, module_id, score, passed, attempted_at) VALUES
+      ('A1001', 'MOD-TRAVEL-DATA', 62, 0, datetime('now', '-4 days')),
+      ('A1001', 'MOD-TRAVEL-DATA', 58, 0, datetime('now', '-2 days')),
+      ('A1001', 'MOD-TRAVEL-DATA', 61, 0, datetime('now', '-1 days')),
+      ('A1001', 'MOD-AML', 86, 1, datetime('now', '-6 hours')),
+      ('A1002', 'MOD-ILP-RISK', 84, 1, datetime('now', '-5 days')),
+      ('A1002', 'MOD-ILP-RISK', 76, 1, datetime('now', '-1 days')),
+      ('A1003', 'MOD-KYC', 69, 0, datetime('now', '-3 days')),
+      ('A1003', 'MOD-KYC', 68, 0, datetime('now', '-1 days')),
+      ('A1004', 'MOD-AML', 88, 1, datetime('now', '-2 days')),
+      ('A1005', 'MOD-TRAVEL-DATA', 92, 1, datetime('now', '-1 days')),
+      ('A1006', 'MOD-ILP-RISK', 64, 0, datetime('now', '-5 days')),
+      ('A1006', 'MOD-ILP-RISK', 66, 0, datetime('now', '-3 days')),
+      ('A1006', 'MOD-ILP-RISK', 63, 0, datetime('now', '-1 days')),
+      ('A1007', 'MOD-AML', 67, 0, datetime('now', '-4 days')),
+      ('A1007', 'MOD-AML', 66, 0, datetime('now', '-1 days')),
+      ('A1008', 'MOD-KYC', 89, 1, datetime('now', '-2 days'));
+
+    INSERT INTO FailedQuestions (agent_id, module_id, question_text, wrong_answer, correct_focus, failed_count) VALUES
+      ('A1001', 'MOD-TRAVEL-DATA', 'Before sharing client data with another KGI subsidiary, what must be confirmed?', 'Assumes group companies may share data automatically.', 'Confirm client consent and approved purpose before cross-entity use.', 3),
+      ('A1001', 'MOD-TRAVEL-DATA', 'Which record proves cross-entity data sharing was allowed?', 'Keeps only the customer ID or case number.', 'Keep consent time, purpose, recipient company, and staff ID.', 2),
+      ('A1003', 'MOD-KYC', 'When should a KYC profile be refreshed for a group client?', 'Waits until the next annual review even after risk changes.', 'Refresh KYC when risk profile, product type, or client information changes.', 2),
+      ('A1006', 'MOD-ILP-RISK', 'What must be explained before recommending a high-risk fund?', 'Focuses only on expected return.', 'Explain suitability, downside risk, fees, and non-guaranteed returns.', 3),
+      ('A1007', 'MOD-AML', 'When should an unusual transaction be escalated?', 'Waits for repeated transactions before reporting.', 'Escalate promptly when the transaction pattern is inconsistent with the client profile.', 2);
   `);
 }
 
 function reconcileNotifications() {
   const missing = runSql(`
-    SELECT l.lock_id, l.agent_id, l.module_id, l.lock_reason, ts.manager_id
+    WITH latest_team AS (
+      SELECT agent_id, manager_id
+      FROM (
+        SELECT
+          agent_id,
+          manager_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY agent_id
+            ORDER BY effective_date DESC, mapping_id DESC
+          ) AS rank
+        FROM TeamStructures
+      )
+      WHERE rank = 1
+    )
+    SELECT l.lock_id, l.agent_id, l.module_id, l.lock_reason, latest_team.manager_id
     FROM ModuleStateLocks l
-    JOIN TeamStructures ts ON ts.agent_id = l.agent_id
+    JOIN latest_team ON latest_team.agent_id = l.agent_id
     LEFT JOIN Notifications n ON n.lock_id = l.lock_id
     WHERE l.is_locked = 1 AND n.notification_id IS NULL;
   `, true);
@@ -214,16 +261,30 @@ function reconcileNotifications() {
 
 function evaluateAllLocks() {
   const failures = runSql(`
-    WITH failed_streaks AS (
-      SELECT agent_id, module_id, COUNT(*) AS fail_count
-      FROM QuizAttempts
+    WITH last_unlock AS (
+      SELECT l.agent_id, l.module_id, MAX(ci.unlocked_timestamp) AS unlocked_at
+      FROM ModuleStateLocks l
+      JOIN CoachingInterventions ci ON ci.lock_id = l.lock_id
+      GROUP BY l.agent_id, l.module_id
+    ),
+    eligible_attempts AS (
+      SELECT qa.*
+      FROM QuizAttempts qa
+      LEFT JOIN last_unlock lu
+        ON lu.agent_id = qa.agent_id
+       AND lu.module_id = qa.module_id
+      WHERE lu.unlocked_at IS NULL OR datetime(qa.attempted_at) > datetime(lu.unlocked_at)
+    ),
+    failed_streaks AS (
+      SELECT agent_id, module_id
+      FROM eligible_attempts
       WHERE passed = 0
       GROUP BY agent_id, module_id
-      HAVING fail_count >= 3
+      HAVING COUNT(*) >= 3
     ),
     rolling AS (
       SELECT agent_id, module_id, ROUND(AVG(score), 1) AS avg_score
-      FROM QuizAttempts
+      FROM eligible_attempts
       WHERE attempted_at >= datetime('now', '-7 days')
       GROUP BY agent_id, module_id
       HAVING avg_score < 70
@@ -256,7 +317,7 @@ function createLockIfNeeded(agentId, moduleId, reason) {
   const manager = runSql(`
     SELECT manager_id FROM TeamStructures
     WHERE agent_id = ${sqlEscape(agentId)}
-    ORDER BY effective_date DESC
+    ORDER BY effective_date DESC, mapping_id DESC
     LIMIT 1;
   `, true)[0];
 
@@ -273,12 +334,86 @@ function createLockIfNeeded(agentId, moduleId, reason) {
   return lock_id;
 }
 
+function getActiveLock(agentId, moduleId) {
+  return runSql(`
+    SELECT
+      l.lock_id,
+      l.agent_id,
+      l.module_id,
+      l.lock_reason,
+      l.locked_timestamp,
+      'Locked_Pending_Coaching' AS module_state
+    FROM ModuleStateLocks l
+    WHERE l.agent_id = ${sqlEscape(agentId)}
+      AND l.module_id = ${sqlEscape(moduleId)}
+      AND l.is_locked = 1
+    ORDER BY l.locked_timestamp DESC, l.lock_id DESC
+    LIMIT 1;
+  `, true)[0] || null;
+}
+
+function getModuleAccess(agentId, moduleId) {
+  if (!agentId || !moduleId) {
+    return { ok: false, status: 422, error: "Agent and module are required." };
+  }
+
+  const activeLock = getActiveLock(agentId, moduleId);
+  if (activeLock) {
+    return {
+      ok: true,
+      can_progress: false,
+      module_state: activeLock.module_state,
+      lock: activeLock
+    };
+  }
+
+  return {
+    ok: true,
+    can_progress: true,
+    module_state: "Active",
+    lock: null
+  };
+}
+
 function getRoster(managerId) {
   return runSql(`
-    WITH recent AS (
+    WITH latest_team AS (
+      SELECT mapping_id, agent_id, manager_id, branch_code, effective_date
+      FROM (
+        SELECT
+          *,
+          ROW_NUMBER() OVER (
+            PARTITION BY agent_id
+            ORDER BY effective_date DESC, mapping_id DESC
+          ) AS rank
+        FROM TeamStructures
+      )
+      WHERE rank = 1
+    ),
+    recent AS (
       SELECT agent_id, ROUND(AVG(score), 1) AS avg_score
       FROM QuizAttempts
       WHERE attempted_at >= datetime('now', '-7 days')
+      GROUP BY agent_id
+    ),
+    ranked_attempts AS (
+      SELECT
+        agent_id,
+        score,
+        ROW_NUMBER() OVER (
+          PARTITION BY agent_id
+          ORDER BY datetime(attempted_at) DESC, attempt_id DESC
+        ) AS rank
+      FROM QuizAttempts
+      WHERE attempted_at >= datetime('now', '-7 days')
+    ),
+    latest_scores AS (
+      SELECT
+        agent_id,
+        MAX(CASE WHEN rank = 1 THEN score END) AS latest_score,
+        MAX(CASE WHEN rank = 2 THEN score END) AS previous_score
+      FROM ranked_attempts
+      WHERE rank <= 2
       GROUP BY agent_id
     ),
     active_locks AS (
@@ -294,14 +429,17 @@ function getRoster(managerId) {
       ts.branch_code,
       COALESCE(recent.avg_score, 0) AS rolling_average,
       COALESCE(active_locks.lock_count, 0) AS lock_count,
+      latest_scores.latest_score,
+      latest_scores.previous_score,
       CASE
         WHEN COALESCE(active_locks.lock_count, 0) > 0 THEN 'Red'
-        WHEN COALESCE(recent.avg_score, 100) < 75 THEN 'Amber'
+        WHEN latest_scores.latest_score < latest_scores.previous_score THEN 'Amber'
         ELSE 'Green'
       END AS health_state
-    FROM TeamStructures ts
+    FROM latest_team ts
     JOIN Agents a ON a.agent_id = ts.agent_id
     LEFT JOIN recent ON recent.agent_id = a.agent_id
+    LEFT JOIN latest_scores ON latest_scores.agent_id = a.agent_id
     LEFT JOIN active_locks ON active_locks.agent_id = a.agent_id
     WHERE ts.manager_id = ${sqlEscape(managerId)}
     ORDER BY
@@ -312,12 +450,25 @@ function getRoster(managerId) {
 
 function getDiagnostics(agentId) {
   const agent = runSql(`
-    SELECT a.agent_id, a.agent_name, a.role_title, ts.manager_id, ts.branch_code
+    WITH latest_team AS (
+      SELECT agent_id, manager_id, branch_code
+      FROM (
+        SELECT
+          agent_id,
+          manager_id,
+          branch_code,
+          ROW_NUMBER() OVER (
+            PARTITION BY agent_id
+            ORDER BY effective_date DESC, mapping_id DESC
+          ) AS rank
+        FROM TeamStructures
+      )
+      WHERE rank = 1
+    )
+    SELECT a.agent_id, a.agent_name, a.role_title, latest_team.manager_id, latest_team.branch_code
     FROM Agents a
-    JOIN TeamStructures ts ON ts.agent_id = a.agent_id
+    JOIN latest_team ON latest_team.agent_id = a.agent_id
     WHERE a.agent_id = ${sqlEscape(agentId)}
-    ORDER BY ts.effective_date DESC
-    LIMIT 1;
   `, true)[0];
 
   if (!agent) {
@@ -325,7 +476,14 @@ function getDiagnostics(agentId) {
   }
 
   const locks = runSql(`
-    SELECT l.lock_id, l.lock_reason, l.locked_timestamp, m.module_id, m.module_title, m.learning_path
+    SELECT
+      l.lock_id,
+      l.lock_reason,
+      l.locked_timestamp,
+      'Locked_Pending_Coaching' AS module_state,
+      m.module_id,
+      m.module_title,
+      m.learning_path
     FROM ModuleStateLocks l
     JOIN Modules m ON m.module_id = l.module_id
     WHERE l.agent_id = ${sqlEscape(agentId)} AND l.is_locked = 1
@@ -333,10 +491,28 @@ function getDiagnostics(agentId) {
   `, true);
 
   const questions = runSql(`
-    SELECT fq.module_id, fq.question_text, fq.wrong_answer, fq.correct_focus, fq.failed_count
+    WITH locked_modules AS (
+      SELECT module_id
+      FROM ModuleStateLocks
+      WHERE agent_id = ${sqlEscape(agentId)} AND is_locked = 1
+    )
+    SELECT
+      fq.module_id,
+      m.module_title,
+      fq.question_text,
+      fq.wrong_answer,
+      fq.correct_focus,
+      SUM(fq.failed_count) AS failed_count
     FROM FailedQuestions fq
+    JOIN Modules m ON m.module_id = fq.module_id
     WHERE fq.agent_id = ${sqlEscape(agentId)}
-    ORDER BY fq.failed_count DESC, fq.question_id ASC;
+      AND (
+        NOT EXISTS (SELECT 1 FROM locked_modules)
+        OR fq.module_id IN (SELECT module_id FROM locked_modules)
+      )
+    GROUP BY fq.module_id, m.module_title, fq.question_text, fq.wrong_answer, fq.correct_focus
+    ORDER BY failed_count DESC, m.module_title ASC, fq.question_text ASC
+    LIMIT 5;
   `, true);
 
   const attempts = runSql(`
@@ -345,12 +521,13 @@ function getDiagnostics(agentId) {
     JOIN Modules m ON m.module_id = qa.module_id
     WHERE qa.agent_id = ${sqlEscape(agentId)}
     ORDER BY qa.attempted_at DESC
-    LIMIT 12;
+    LIMIT 5;
   `, true);
 
-  const feedback = questions.length
-    ? `AI feedback: ${agent.agent_name} is repeatedly missing: ${questions.map((q) => q.correct_focus).join(" ")} Coach with one concrete client scenario, then ask them to restate the required decision steps before unlocking.`
-    : `AI feedback: no repeated failed-question pattern is currently available.`;
+  const coachingFocuses = [...new Set(questions.map((q) => q.correct_focus))];
+  const feedback = coachingFocuses.length
+    ? `Focus on ${coachingFocuses.slice(0, 2).join(" ")} Confirm the agent can explain the decision steps before unlocking.`
+    : `No repeated failed-question pattern is currently available.`;
 
   return { agent, locks, questions, attempts, feedback };
 }
@@ -371,10 +548,29 @@ function unlockModule({ lockId, managerId, notes }) {
   }
 
   const lock = runSql(`
-    SELECT lock_id FROM ModuleStateLocks
-    WHERE lock_id = ${numericLockId} AND is_locked = 1;
+    WITH latest_team AS (
+      SELECT agent_id, manager_id
+      FROM (
+        SELECT
+          agent_id,
+          manager_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY agent_id
+            ORDER BY effective_date DESC, mapping_id DESC
+          ) AS rank
+        FROM TeamStructures
+      )
+      WHERE rank = 1
+    )
+    SELECT l.lock_id, latest_team.manager_id
+    FROM ModuleStateLocks l
+    JOIN latest_team ON latest_team.agent_id = l.agent_id
+    WHERE l.lock_id = ${numericLockId} AND l.is_locked = 1;
   `, true)[0];
   if (!lock) return { ok: false, status: 404, error: "Active lock not found." };
+  if (lock.manager_id !== managerId) {
+    return { ok: false, status: 403, error: "Only the agent's direct manager can unlock this module." };
+  }
 
   runSql(`
     INSERT INTO CoachingInterventions (lock_id, manager_id, manager_notes_text)
@@ -388,7 +584,7 @@ function unlockModule({ lockId, managerId, notes }) {
     SET status = 'resolved'
     WHERE lock_id = ${numericLockId};
   `);
-  return { ok: true };
+  return { ok: true, module_state: "Active" };
 }
 
 function simulateQuiz({ agentId, moduleId, score }) {
@@ -396,6 +592,18 @@ function simulateQuiz({ agentId, moduleId, score }) {
   if (!agentId || !moduleId || !Number.isFinite(numericScore) || numericScore < 0 || numericScore > 100) {
     return { ok: false, status: 422, error: "Agent, module, and a score from 0 to 100 are required." };
   }
+
+  const activeLock = getActiveLock(agentId, moduleId);
+  if (activeLock) {
+    return {
+      ok: false,
+      status: 423,
+      error: "This module is Locked_Pending_Coaching. The agent cannot continue this learning path until the manager records coaching and unlocks it.",
+      module_state: activeLock.module_state,
+      lock: activeLock
+    };
+  }
+
   const passed = numericScore >= 70 ? 1 : 0;
   runSql(`
     INSERT INTO QuizAttempts (agent_id, module_id, score, passed)
@@ -404,19 +612,28 @@ function simulateQuiz({ agentId, moduleId, score }) {
 
   if (!passed) {
     runSql(`
+      UPDATE FailedQuestions
+      SET
+        wrong_answer = 'Internal product bundle approval is enough.',
+        correct_focus = 'Documented customer consent, declared purpose, and permitted recipient scope.',
+        failed_count = failed_count + 1
+      WHERE agent_id = ${sqlEscape(agentId)}
+        AND module_id = ${sqlEscape(moduleId)}
+        AND question_text = 'Scenario check: what must happen before cross-entity customer-data sharing?';
+
       INSERT INTO FailedQuestions (agent_id, module_id, question_text, wrong_answer, correct_focus, failed_count)
-      VALUES (
+      SELECT
         ${sqlEscape(agentId)},
         ${sqlEscape(moduleId)},
         'Scenario check: what must happen before cross-entity customer-data sharing?',
         'Internal product bundle approval is enough.',
         'Documented customer consent, declared purpose, and permitted recipient scope.',
         1
-      );
+      WHERE changes() = 0;
     `);
   }
   evaluateAllLocks();
-  return { ok: true };
+  return getModuleAccess(agentId, moduleId);
 }
 
 function send(res, status, payload, type = "application/json") {
@@ -477,12 +694,14 @@ async function handle(req, res) {
         manager: runSql("SELECT * FROM Managers WHERE manager_id = 'MGR001';", true)[0],
         roster: getRoster(url.searchParams.get("manager_id") || "MGR001"),
         notifications: runSql(`
-          SELECT n.*, a.agent_name, m.module_title
+          SELECT n.*, a.agent_name, m.module_title, l.lock_reason, l.is_locked
           FROM Notifications n
           JOIN ModuleStateLocks l ON l.lock_id = n.lock_id
           JOIN Agents a ON a.agent_id = l.agent_id
           JOIN Modules m ON m.module_id = l.module_id
           WHERE n.manager_id = ${sqlEscape(url.searchParams.get("manager_id") || "MGR001")}
+            AND n.status = 'urgent'
+            AND l.is_locked = 1
           ORDER BY n.created_at DESC
           LIMIT 10;
         `, true)
@@ -491,6 +710,11 @@ async function handle(req, res) {
 
     if (req.method === "GET" && url.pathname.startsWith("/api/agent/")) {
       return send(res, 200, getDiagnostics(url.pathname.split("/").pop()));
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/module-access") {
+      const result = getModuleAccess(url.searchParams.get("agent_id"), url.searchParams.get("module_id"));
+      return send(res, result.ok ? 200 : result.status, result);
     }
 
     if (req.method === "POST" && url.pathname === "/api/unlock") {
