@@ -209,7 +209,7 @@ function renderDiagnosticDetails() {
       <span class="module-label">${escapeHtml(lock.module_title)}</span>
       <strong>Module locked</strong>
       <p>${lockReasonLabel(lock.lock_reason)}</p>
-      <small>Next step: coach offline, record the intervention note, then unlock. Locked ${escapeHtml(formatDateTime(lock.locked_timestamp))}</small>
+      <small>Next step: coach offline, record the intervention note, then unlock.<br>Locked ${escapeHtml(formatDateTime(lock.locked_timestamp))}</small>
     </article>
   `).join("") : `
     <article class="soft-card">

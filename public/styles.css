@@ -78,10 +78,11 @@ textarea:focus-visible,
 }
 
 .hero-copy {
-  max-width: 760px;
+  max-width: none;
   margin: 7px 0 0;
   color: #dbe7e2;
   line-height: 1.45;
+  white-space: nowrap;
 }
 
 .eyebrow {
