@@ -1018,6 +1018,7 @@ button:active {
 
   .hero-copy {
     font-size: 13px;
+    white-space: normal;
   }
 
   .team-summary {
