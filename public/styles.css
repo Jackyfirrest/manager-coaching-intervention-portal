@@ -75,6 +75,8 @@ textarea:focus-visible,
 .topbar h1 {
   font-size: 27px;
   line-height: 1.15;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy {
@@ -1005,6 +1007,19 @@ button:active {
     padding: 16px;
   }
 
+  .brand-block {
+    min-width: 0;
+  }
+
+  .topbar h1 {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .hero-copy {
+    font-size: 13px;
+  }
+
   .team-summary {
     grid-template-columns: 1fr;
   }
@@ -1031,5 +1046,15 @@ button:active {
 
   button {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar h1 {
+    font-size: 20px;
+  }
+
+  .hero-copy {
+    font-size: 12px;
   }
 }
