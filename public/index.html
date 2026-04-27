@@ -68,8 +68,14 @@
           </div>
 
           <div class="module-picker-row">
-            <label for="moduleFilter">Module</label>
-            <select id="moduleFilter" aria-label="Select diagnostic module"></select>
+            <div class="module-picker-field">
+              <label for="moduleFilter">Module</label>
+              <select id="moduleFilter" aria-label="Select diagnostic module"></select>
+            </div>
+            <div class="module-picker-field module-path-field">
+              <span class="module-picker-label">Learning Path</span>
+              <p id="learningPathValue" class="module-path-value">Not available</p>
+            </div>
           </div>
 
           <div class="detail-tabs" role="tablist" aria-label="Diagnostic sections">

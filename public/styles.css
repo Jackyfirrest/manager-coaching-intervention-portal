@@ -516,8 +516,8 @@ button:active {
 
 .module-picker-row {
   display: grid;
-  grid-template-columns: auto minmax(220px, 360px);
-  align-items: center;
+  grid-template-columns: minmax(220px, 360px) minmax(220px, 1fr);
+  align-items: stretch;
   gap: 12px;
   margin-top: 16px;
   padding: 11px;
@@ -526,9 +526,32 @@ button:active {
   background: var(--surface-tint);
 }
 
-.module-picker-row label {
+.module-picker-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.module-picker-row label,
+.module-picker-label {
   color: var(--muted);
   font-weight: 800;
+}
+
+.module-path-field {
+  padding-left: 12px;
+  border-left: 1px solid rgba(72, 107, 98, 0.16);
+}
+
+.module-path-value {
+  margin: 0;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: 1px solid rgba(72, 107, 98, 0.16);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  line-height: 1.35;
 }
 
 .detail-tabs {
@@ -996,6 +1019,17 @@ button:active {
   .layout,
   .grid-two {
     grid-template-columns: 1fr;
+  }
+
+  .module-picker-row {
+    grid-template-columns: 1fr;
+  }
+
+  .module-path-field {
+    padding-top: 12px;
+    padding-left: 0;
+    border-top: 1px solid rgba(72, 107, 98, 0.16);
+    border-left: 0;
   }
 
   .detail-tabs {

@@ -529,6 +529,7 @@ function getDiagnostics(agentId) {
     SELECT
       fq.module_id,
       m.module_title,
+      m.learning_path,
       fq.question_text,
       fq.wrong_answer,
       fq.correct_focus,
@@ -540,13 +541,13 @@ function getDiagnostics(agentId) {
         NOT EXISTS (SELECT 1 FROM locked_modules)
         OR fq.module_id IN (SELECT module_id FROM locked_modules)
       )
-    GROUP BY fq.module_id, m.module_title, fq.question_text, fq.wrong_answer, fq.correct_focus
+    GROUP BY fq.module_id, m.module_title, m.learning_path, fq.question_text, fq.wrong_answer, fq.correct_focus
     ORDER BY failed_count DESC, m.module_title ASC, fq.question_text ASC
     LIMIT 5;
   `, true);
 
   const attempts = runSql(`
-    SELECT qa.module_id, m.module_title, qa.score, qa.passed, qa.attempted_at
+    SELECT qa.module_id, m.module_title, m.learning_path, qa.score, qa.passed, qa.attempted_at
     FROM QuizAttempts qa
     JOIN Modules m ON m.module_id = qa.module_id
     WHERE qa.agent_id = ${sqlEscape(agentId)}

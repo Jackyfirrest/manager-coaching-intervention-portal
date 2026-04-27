@@ -18,6 +18,7 @@ const alertsToggle = document.querySelector("#alertsToggle");
 const diagnostics = document.querySelector("#diagnostics");
 const emptyState = document.querySelector("#emptyState");
 const moduleFilter = document.querySelector("#moduleFilter");
+const learningPathValue = document.querySelector("#learningPathValue");
 const unlockForm = document.querySelector("#unlockForm");
 const notes = document.querySelector("#notes");
 const noteCount = document.querySelector("#noteCount");
@@ -175,9 +176,19 @@ function lockReasonLabel(reason) {
 function diagnosticModules(data) {
   const seen = new Map();
   [...data.locks, ...data.attempts, ...data.questions].forEach((item) => {
-    if (!seen.has(item.module_id)) seen.set(item.module_id, item.module_title);
+    if (!seen.has(item.module_id)) {
+      seen.set(item.module_id, {
+        module_id: item.module_id,
+        module_title: item.module_title,
+        learning_path: item.learning_path || ""
+      });
+      return;
+    }
+
+    const module = seen.get(item.module_id);
+    if (!module.learning_path && item.learning_path) module.learning_path = item.learning_path;
   });
-  return [...seen].map(([module_id, module_title]) => ({ module_id, module_title }));
+  return [...seen.values()];
 }
 
 function renderDiagnosticDetails() {
@@ -193,6 +204,9 @@ function renderDiagnosticDetails() {
     <option value="${escapeHtml(module.module_id)}" ${module.module_id === selectedModuleId ? "selected" : ""}>${escapeHtml(module.module_title)}</option>
   `).join("");
   moduleFilter.disabled = false;
+
+  const activeModule = modules.find((module) => module.module_id === selectedModuleId);
+  learningPathValue.textContent = activeModule?.learning_path || "Not available";
 
   const locks = data.locks.filter((lock) => lock.module_id === selectedModuleId);
   const questions = data.questions.filter((question) => question.module_id === selectedModuleId);
